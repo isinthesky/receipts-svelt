@@ -7,8 +7,9 @@ alwaysApply: false
 # Your rule content
 
 [guide-intro.md](mdc:docs/guide-intro.md)
+# Svelte 프론트엔드 구현 수정 작업 계획
 
-# Svelte 프론트엔드 구현 7일 작업 계획
+스마트 문서 기반 영수증 처리 시스템을 위한 Svelte 프론트엔드 구현 계획을 수정했습니다. 보고서와 분석 관련 엔드포인트를 제거하고 Task, Image, Receipt 모델을 효과적으로 다루는 UI 구성으로 변경했습니다.
 
 ## API 서버 주요 엔드포인트 참조
 
@@ -27,16 +28,26 @@ alwaysApply: false
 - `GET /users/profile` - 사용자 프로필 조회
 - `PUT /users/profile` - 사용자 프로필 업데이트
 
-#### 보고서 관련 엔드포인트
-- `GET /reports` - 보고서 목록 조회 (페이지네이션, 필터링 지원)
-- `GET /reports/{id}` - 특정 보고서 상세 조회
-- `POST /reports` - 새 보고서 생성
-- `PUT /reports/{id}` - 보고서 업데이트
-- `DELETE /reports/{id}` - 보고서 삭제
+#### 태스크 관련 엔드포인트 (추가 필요)
+- `GET /tasks` - 태스크 목록 조회
+- `GET /tasks/{id}` - 특정 태스크 상세 조회
+- `POST /tasks` - 새 태스크 생성
+- `PUT /tasks/{id}` - 태스크 업데이트
+- `DELETE /tasks/{id}` - 태스크 삭제
 
-#### 분석 관련 엔드포인트
-- `GET /analytics/dashboard` - 대시보드 통계 데이터
-- `GET /analytics/reports` - 보고서 관련 분석 데이터
+#### 이미지 관련 엔드포인트 (추가 필요)
+- `GET /tasks/{task_id}/images` - 태스크별 이미지 목록 조회
+- `GET /images/{id}` - 특정 이미지 상세 조회
+- `POST /tasks/{task_id}/images` - 이미지 업로드
+- `PUT /images/{id}` - 이미지 정보 업데이트
+- `DELETE /images/{id}` - 이미지 삭제
+
+#### 영수증 관련 엔드포인트 (추가 필요)
+- `GET /images/{image_id}/receipts` - 이미지별 영수증 목록 조회
+- `GET /receipts/{id}` - 특정 영수증 상세 조회
+- `POST /images/{image_id}/receipts` - 영수증 정보 추가
+- `PUT /receipts/{id}` - 영수증 정보 업데이트
+- `DELETE /receipts/{id}` - 영수증 정보 삭제
 
 ---
 
@@ -56,9 +67,9 @@ alwaysApply: false
   ```
 - [ ] 추가 필요 라이브러리 설치
   ```bash
-  npm install axios
+  npm install axios uuid date-fns
   ```
-- [ ] (선택) UI 라이브러리/스타일링 도구 설치
+- [ ] UI 라이브러리/스타일링 도구 설치
   ```bash
   npm install -D tailwindcss postcss autoprefixer
   npx tailwindcss init -p
@@ -73,7 +84,7 @@ alwaysApply: false
   ```
 - [ ] routes 디렉토리 설정
   ```bash
-  mkdir -p src/routes/{(auth)/{login,register},(protected)/dashboard}
+  mkdir -p src/routes/{(auth)/{login,register},(protected)/{tasks,images,receipts}}
   ```
 
 ### 환경 변수 설정
@@ -94,6 +105,9 @@ alwaysApply: false
 
 - [ ] `src/lib/stores/auth.js` 생성 (인증 관련 상태)
 - [ ] `src/lib/stores/app.js` 생성 (앱 상태)
+- [ ] `src/lib/stores/tasks.js` 생성 (태스크 관련 상태)
+- [ ] `src/lib/stores/images.js` 생성 (이미지 관련 상태)
+- [ ] `src/lib/stores/receipts.js` 생성 (영수증 관련 상태)
 
 ### 1일차 작업 검증
 
@@ -177,7 +191,8 @@ alwaysApply: false
 - [ ] 카드 컴포넌트 (`src/lib/components/ui/Card.svelte`)
 - [ ] 알림 컴포넌트 (`src/lib/components/ui/Alert.svelte`)
 - [ ] 로딩 인디케이터 (`src/lib/components/ui/Loading.svelte`)
-- [ ] 알림 목록 컴포넌트 (`src/lib/components/ui/NotificationsList.svelte`)
+- [ ] 모달 컴포넌트 (`src/lib/components/ui/Modal.svelte`)
+- [ ] 드롭존 컴포넌트 (`src/lib/components/ui/Dropzone.svelte`) - 이미지 업로드용
 
 ### 애플리케이션 스토어 구현
 
@@ -196,90 +211,158 @@ alwaysApply: false
 
 ---
 
-## 4일차: Main API 통합 및 대시보드 구현
+## 4일차: 태스크 관리 기능 구현
 
-### Main API 클라이언트 완성
+### Main API 태스크 클라이언트 완성
 
-- [ ] `src/lib/api/main.js` 완성
-  - [ ] getUserData 함수 구현
-  - [ ] getReports 함수 구현
-  - [ ] getReportDetail 함수 구현
-  - [ ] createReport 함수 구현
-  - [ ] updateReport 함수 구현
-  - [ ] deleteReport 함수 구현
-  - [ ] getAnalytics 함수 구현
+- [ ] `src/lib/api/task.js` 완성
+  - [ ] getTasks 함수 구현
+  - [ ] getTaskById 함수 구현
+  - [ ] createTask 함수 구현
+  - [ ] updateTask 함수 구현
+  - [ ] deleteTask 함수 구현
 
-### 대시보드 페이지 구현
+### 태스크 관련 화면 구현
 
-- [ ] 대시보드 페이지 (`src/routes/(protected)/dashboard/+page.svelte`)
-  - [ ] 통계 카드 섹션
-  - [ ] 최근 보고서 목록
-  - [ ] 차트/그래프 (선택사항)
-- [ ] 대시보드 데이터 로딩 및 표시
-  - [ ] API 연동
-  - [ ] 로딩 상태 처리
-  - [ ] 오류 상태 처리
-
-### 공통 오류 처리 구현
-
-- [ ] 오류 처리 유틸리티 (`src/lib/utils/error-handler.js`)
-  - [ ] HTTP 상태 코드별 처리
-  - [ ] 네트워크 오류 처리
-  - [ ] 사용자 친화적 오류 메시지
-
-### 4일차 작업 검증
-
-- [ ] 개발 서버에서 대시보드 페이지 확인
-- [ ] API 데이터 로딩 테스트
-- [ ] 로딩 상태 및 오류 상태 표시 확인
-- [ ] 다양한 화면 크기에서 대시보드 레이아웃 확인
-
----
-
-## 5일차: 보고서 및 분석 기능 구현
-
-### 보고서 목록 페이지 구현
-
-- [ ] 보고서 목록 페이지 (`src/routes/(protected)/reports/+page.svelte`)
-  - [ ] 테이블/그리드 레이아웃
+- [ ] 태스크 목록 페이지 (`src/routes/(protected)/tasks/+page.svelte`)
+  - [ ] 테이블/카드 레이아웃
   - [ ] 정렬 및 필터링
   - [ ] 페이지네이션
   - [ ] 검색 기능
-- [ ] API 연동
-  - [ ] 데이터 로딩
-  - [ ] 필터링/정렬/페이지네이션 연동
-
-### 보고서 상세 페이지 구현
-
-- [ ] 보고서 상세 페이지 (`src/routes/(protected)/reports/[id]/+page.svelte`)
-  - [ ] 보고서 정보 표시
+- [ ] 태스크 상세 페이지 (`src/routes/(protected)/tasks/[id]/+page.svelte`)
+  - [ ] 태스크 정보 표시
   - [ ] 편집 기능
   - [ ] 삭제 기능
-- [ ] API 연동
-  - [ ] 상세 데이터 로딩
-  - [ ] 업데이트 처리
-  - [ ] 삭제 처리
-
-### 보고서 생성 페이지 구현
-
-- [ ] 보고서 생성 페이지 (`src/routes/(protected)/reports/new/+page.svelte`)
+  - [ ] 이미지 목록 표시
+- [ ] 태스크 생성 페이지 (`src/routes/(protected)/tasks/new/+page.svelte`)
   - [ ] 폼 구현
   - [ ] 유효성 검사
-- [ ] API 연동
-  - [ ] 데이터 제출
-  - [ ] 성공/오류 처리
+  - [ ] 제출 처리
 
-### 5일차 작업 검증
+### 태스크 스토어 완성
 
-- [ ] 개발 서버에서 보고서 목록 페이지 확인
-- [ ] 보고서 상세 페이지 확인
-- [ ] 보고서 생성 기능 테스트
-- [ ] 보고서 편집 및 삭제 기능 테스트
-- [ ] 페이지네이션 및 필터링 기능 확인
+- [ ] `src/lib/stores/tasks.js` 완성
+  - [ ] 태스크 목록 상태
+  - [ ] 현재 태스크 상태
+  - [ ] 로딩/오류 상태
+  - [ ] CRUD 액션
+
+### 4일차 작업 검증
+
+- [ ] 개발 서버에서 태스크 목록 페이지 확인
+- [ ] 태스크 생성 기능 테스트
+- [ ] 태스크 상세 정보 조회 테스트
+- [ ] 태스크 편집 및 삭제 기능 테스트
 
 ---
 
-## 6일차: 오류 처리, 로딩 상태 및 UX 개선
+## 5일차: 이미지 관리 기능 구현
+
+### 이미지 API 클라이언트 완성
+
+- [ ] `src/lib/api/image.js` 완성
+  - [ ] getImages 함수 구현
+  - [ ] getImageById 함수 구현
+  - [ ] uploadImage 함수 구현
+  - [ ] updateImage 함수 구현
+  - [ ] deleteImage 함수 구현
+
+### 이미지 관련 화면 구현
+
+- [ ] 이미지 목록 컴포넌트 (`src/lib/components/features/ImageList.svelte`)
+  - [ ] 그리드/갤러리 뷰
+  - [ ] 이미지 썸네일 표시
+  - [ ] 업로드 버튼
+  - [ ] 이미지 선택 기능
+- [ ] 이미지 상세 페이지 (`src/routes/(protected)/images/[id]/+page.svelte`)
+  - [ ] 이미지 표시
+  - [ ] 이미지 메타데이터 표시
+  - [ ] 이미지 편집 기능
+  - [ ] 영수증 정보 표시
+- [ ] 이미지 업로드 컴포넌트 (`src/lib/components/features/ImageUpload.svelte`)
+  - [ ] 드래그 앤 드롭 기능
+  - [ ] 다중 파일 업로드
+  - [ ] 업로드 진행 상태
+  - [ ] 오류 처리
+
+### 이미지 스토어 완성
+
+- [ ] `src/lib/stores/images.js` 완성
+  - [ ] 이미지 목록 상태
+  - [ ] 현재 이미지 상태
+  - [ ] 업로드 상태
+  - [ ] CRUD 액션
+
+### 5일차 작업 검증
+
+- [ ] 개발 서버에서 이미지 목록 확인
+- [ ] 이미지 업로드 기능 테스트
+- [ ] 이미지 상세 보기 테스트
+- [ ] 이미지 편집 및 삭제 기능 테스트
+
+---
+
+## 6일차: 영수증 관리 기능 구현
+
+### 영수증 API 클라이언트 완성
+
+- [ ] `src/lib/api/receipt.js` 완성
+  - [ ] getReceipts 함수 구현
+  - [ ] getReceiptById 함수 구현
+  - [ ] createReceipt 함수 구현
+  - [ ] updateReceipt 함수 구현
+  - [ ] deleteReceipt 함수 구현
+
+### 영수증 관련 화면 구현
+
+- [ ] 영수증 목록 컴포넌트 (`src/lib/components/features/ReceiptList.svelte`)
+  - [ ] 테이블/카드 레이아웃
+  - [ ] 정렬 및 필터링
+  - [ ] 영수증 요약 정보 표시
+- [ ] 영수증 상세 페이지 (`src/routes/(protected)/receipts/[id]/+page.svelte`)
+  - [ ] 영수증 정보 표시
+  - [ ] 원본 이미지 표시
+  - [ ] 편집 기능
+  - [ ] 삭제 기능
+- [ ] 영수증 편집 폼 (`src/lib/components/features/ReceiptForm.svelte`)
+  - [ ] 영수증 데이터 입력 필드
+  - [ ] 유효성 검사
+  - [ ] 제출 처리
+
+### 영수증 스토어 완성
+
+- [ ] `src/lib/stores/receipts.js` 완성
+  - [ ] 영수증 목록 상태
+  - [ ] 현재 영수증 상태
+  - [ ] 로딩/오류 상태
+  - [ ] CRUD 액션
+
+### 영수증 시각화 컴포넌트
+
+- [ ] 영수증 OCR 영역 표시 컴포넌트 (`src/lib/components/features/ReceiptOcrView.svelte`)
+  - [ ] 이미지 위에 영역 표시
+  - [ ] 영역 선택 및 편집
+  - [ ] 인식된 텍스트 하이라이트
+
+### 6일차 작업 검증
+
+- [ ] 개발 서버에서 영수증 목록 확인
+- [ ] 영수증 생성 기능 테스트
+- [ ] 영수증 상세 정보 조회 테스트
+- [ ] 영수증 편집 및 삭제 기능 테스트
+- [ ] OCR 영역 표시 기능 테스트
+
+---
+
+## 7일차: 대시보드, 오류 처리, 최적화 및 배포
+
+### 대시보드 구현
+
+- [ ] 대시보드 페이지 (`src/routes/(protected)/dashboard/+page.svelte`)
+  - [ ] 태스크 요약 카드
+  - [ ] 최근 업로드 이미지
+  - [ ] 영수증 통계 (총액, 개수 등)
+  - [ ] 사용자 활동 요약
 
 ### 전역 오류 처리 시스템 개선
 
@@ -287,80 +370,22 @@ alwaysApply: false
 - [ ] 오류 발생 시 사용자 알림 표시
 - [ ] API 오류 코드별 특정 처리 추가
 
-### 로딩 상태 개선
-
-- [ ] 로딩 인디케이터 적용
-  - [ ] 페이지 로드 시
-  - [ ] API 요청 중
-  - [ ] 긴 작업 중
-- [ ] 스켈레톤 로더 구현 (선택사항)
-
-### 폼 상호작용 개선
-
-- [ ] 입력 유효성 검사 강화
-- [ ] 실시간 피드백 제공
-- [ ] 제출 버튼 상태 관리
-
-### 반응형 디자인 개선
-
-- [ ] 모바일 화면 최적화
-- [ ] 태블릿 화면 최적화
-- [ ] 터치 인터페이스 개선
-
 ### 성능 최적화
 
 - [ ] 코드 분할 구현
-- [ ] 이미지 최적화
+- [ ] 이미지 최적화 (lazy loading)
 - [ ] 불필요한 리렌더링 방지
-
-### 6일차 작업 검증
-
-- [ ] 개발 서버에서 모든 페이지 반응형 디자인 확인
-- [ ] 다양한 오류 시나리오 테스트
-- [ ] 로딩 상태 표시 확인
-- [ ] 폼 유효성 검사 및 피드백 확인
-- [ ] 전반적인 사용자 경험 테스트
-
----
-
-## 7일차: 테스트, 최적화 및 배포
-
-### 최종 테스트
-
-- [ ] 모든 페이지 기능 검증
-- [ ] 인증 흐름 테스트
-- [ ] API 통합 테스트
-- [ ] 오류 처리 확인
-- [ ] 브라우저 호환성 테스트
-
-### 성능 최적화
-
-- [ ] Lighthouse 점수 확인 및 개선
-- [ ] 번들 크기 최적화
-- [ ] 레이지 로딩 구현
 - [ ] 캐시 전략 수립
 
 ### 배포 준비
 
 - [ ] 환경 변수 설정 확인
 - [ ] 빌드 스크립트 확인
-- [ ] 배포 환경 설정 (Node.js 또는 정적 호스팅)
-
-### Docker 배포 설정 (선택사항)
-
-- [ ] Dockerfile 작성
-- [ ] Docker 이미지 빌드
-- [ ] 컨테이너 실행 테스트
-
-### 배포 및 검증
-
-- [ ] 프로덕션 빌드 생성
+- [ ] 빌드 테스트
   ```bash
   npm run build
   ```
-- [ ] 빌드 결과 검증
-- [ ] 배포 실행
-- [ ] 배포 후 모든 기능 확인
+- [ ] 배포 환경 설정 (Node.js 또는 정적 호스팅)
 
 ### 문서화
 
@@ -371,7 +396,94 @@ alwaysApply: false
 
 ### 7일차 작업 검증
 
-- [ ] 프로덕션 빌드 테스트
-- [ ] 모든 기능이 프로덕션 환경에서 정상 작동하는지 확인
-- [ ] 성능 지표 확인
+- [ ] 대시보드 기능 테스트
+- [ ] 전체 애플리케이션 흐름 테스트
+- [ ] 성능 및 반응성 확인
+- [ ] 빌드 결과물 검증
 - [ ] 문서 완성도 확인
+
+## 상용 서비스에서 채택하는 방법 및 추가 고려사항
+
+### 프론트엔드 아키텍처 패턴
+
+1. **컴포넌트 기반 설계**
+   - 재사용 가능한 UI 컴포넌트를 만들어 개발 효율성 향상
+   - 스토리북(Storybook)을 도입하여 컴포넌트 문서화 고려
+
+2. **상태 관리 전략**
+   - Svelte 자체 스토어를 사용하여 간결한 상태 관리
+   - 대규모 애플리케이션으로 확장 시 Pinia나 Redux 도입 고려
+
+3. **API 통신 패턴**
+   - 요청/응답 인터셉터 활용으로 일관된 오류 처리
+   - 캐시 전략 사용으로 중복 요청 최소화
+
+### 최신 개발 트렌드
+
+1. **점진적 향상 기법(Progressive Enhancement)**
+   - 기본 기능부터 구현 후 고급 기능 추가
+   - 오프라인 지원을 위한 서비스 워커 고려
+
+2. **마이크로 프론트엔드 고려**
+   - 확장성을 위해 독립적으로 배포 가능한 기능 단위로 설계
+   - 페이지/기능별 지연 로딩 구현
+
+3. **접근성(Accessibility) 고려**
+   - WCAG 2.1 가이드라인 준수
+   - 스크린 리더 지원 및 키보드 네비게이션 구현
+
+### 성능 최적화 기법
+
+1. **코드 분할(Code Splitting)**
+   - 라우트 기반 지연 로딩 구현
+   - 큰 라이브러리는 별도 청크로 분리
+
+2. **이미지 최적화**
+   - 이미지 압축 및 적절한 포맷 사용
+   - 반응형 이미지 및 지연 로딩 구현
+   - WebP 형식 활용
+
+3. **캐싱 전략**
+   - 정적 자산 캐싱
+   - API 응답 캐싱
+
+### 배포 및 운영 전략
+
+1. **CI/CD 파이프라인**
+   - GitHub Actions 또는 GitLab CI 설정
+   - 자동화된 테스트 및 배포
+
+2. **컨테이너화**
+   - Docker를 사용한 일관된 환경
+   - Kubernetes 배포 고려
+
+3. **모니터링**
+   - Sentry 또는 LogRocket을 통한 오류 추적
+   - 사용자 행동 분석을 위한 이벤트 로깅
+
+### 보안 강화 방안
+
+1. **HTTPS 적용**
+   - 모든 API 통신에 HTTPS 사용
+
+2. **인증 토큰 보안**
+   - JWT 토큰 안전한 저장
+   - 자동 토큰 갱신 메커니즘
+
+3. **입력 데이터 검증**
+   - 프론트엔드에서 모든 사용자 입력 유효성 검사
+   - XSS 방지를 위한 특수문자 처리
+
+### 추가 기능 제안
+
+1. **영수증 데이터 시각화**
+   - 지출 분석 차트 및 그래프
+   - 시간별/카테고리별 지출 분석
+
+2. **사용자 설정**
+   - 개인화된 대시보드 레이아웃
+   - 알림 설정 기능
+
+3. **협업 기능**
+   - 팀원 간 태스크 공유
+   - 코멘트 및 알림 시스템

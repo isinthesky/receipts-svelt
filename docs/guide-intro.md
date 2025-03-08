@@ -1,27 +1,3 @@
-I need more information about integrating Svelte with APIs, so let me search for that:
-
-
-
-Let me search for information about structuring a Svelte application to interact with multiple API servers:
-
-
-
-
-Now I have a better understanding of modern Svelte architecture, best practices for API integration, and authentication patterns. Let me create a detailed work instruction document for a Svelte frontend application that will interact with main API and auth API servers.
-
-Based on the search results, I'll create a comprehensive work instruction document that covers:
-
-1. Project structure and organization
-2. Authentication flow with the auth API server
-3. Integration with the main API server
-4. Modern Svelte patterns and best practices
-5. Component architecture
-6. State management
-7. Error handling and loading states
-8. Deployment considerations
-
-I'll make the document practical, detailed, and focused on creating modern, maintainable code.
-
 # 프론트엔드 개발 작업지시서: Svelte 프레임워크 구현
 
 ## 1. 프로젝트 개요
@@ -36,16 +12,19 @@ I'll make the document practical, detailed, and focused on creating modern, main
 src/
 ├── lib/
 │   ├── api/                  # API 통신 관련 모듈
-│   │   ├── main.js           # Main API 통신 클라이언트
-│   │   ├── auth.js           # Auth API 통신 클라이언트
-│   │   └── interceptors.js   # API 요청/응답 인터셉터
+│   │   ├── main.ts           # Main API 통신 클라이언트
+│   │   ├── auth.ts           # Auth API 통신 클라이언트
+│   │   └── interceptors.ts   # API 요청/응답 인터셉터
 │   ├── components/           # 재사용 가능한 컴포넌트
 │   │   ├── ui/               # 기본 UI 컴포넌트
 │   │   └── features/         # 기능 중심 컴포넌트
 │   ├── stores/               # 상태 관리 스토어
-│   │   ├── auth.js           # 인증 관련 스토어
-│   │   └── app.js            # 애플리케이션 상태 스토어
+│   │   ├── auth.ts           # 인증 관련 스토어
+│   │   └── app.ts            # 애플리케이션 상태 스토어
+│   ├── types/                # 타입 정의
+│   │   └── auth.types.ts     # 인증 관련 타입 정의
 │   ├── utils/                # 유틸리티 함수
+│   │   └── token.ts          # 토큰 관리 유틸리티
 │   └── constants/            # 상수 정의
 ├── routes/                   # SvelteKit 라우트
 │   ├── (auth)/               # 인증 관련 라우트 그룹
@@ -54,8 +33,10 @@ src/
 │   ├── (protected)/          # 인증 필요 라우트 그룹
 │   │   └── dashboard/+page.svelte
 │   ├── +layout.svelte        # 루트 레이아웃
-│   └── +layout.js            # 레이아웃 로직(인증 체크 등)
-└── app.html                  # HTML 템플릿
+│   └── +layout.ts            # 레이아웃 로직(인증 체크 등)
+├── app.html                  # HTML 템플릿
+├── vite.config.ts            # Vite 설정
+└── tsconfig.json             # TypeScript 설정
 ```
 
 ## 3. 환경 설정 및 초기 설정
@@ -70,6 +51,10 @@ cd my-facreport-app
 # 의존성 설치
 npm install
 
+# TypeScript 설치 및 설정
+npm install -D typescript @tsconfig/svelte
+npx svelte-add typescript
+
 # API 통신을 위한 라이브러리
 npm install axios
 
@@ -78,7 +63,55 @@ npm install -D tailwindcss postcss autoprefixer
 npx tailwindcss init -p
 ```
 
-### 3.2 환경 변수 설정 (.env 파일)
+### 3.2 TypeScript 설정 (tsconfig.json)
+
+```json
+{
+  "extends": "@tsconfig/svelte/tsconfig.json",
+  "compilerOptions": {
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "checkJs": true,
+    "isolatedModules": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "baseUrl": ".",
+    "paths": {
+      "$lib": ["src/lib"],
+      "$lib/*": ["src/lib/*"]
+    }
+  },
+  "include": ["src/**/*.d.ts", "src/**/*.ts", "src/**/*.js", "src/**/*.svelte"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}
+```
+
+### 3.3 Vite 설정 (vite.config.ts)
+
+```typescript
+import { defineConfig } from 'vite';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
+import path from 'path';
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins: [svelte()],
+  resolve: {
+    alias: {
+      $lib: path.resolve('./src/lib')
+    }
+  },
+  server: {
+    port: 5173
+  }
+});
+```
+
+### 3.4 환경 변수 설정 (.env 파일)
 
 ```
 PUBLIC_MAIN_API_URL=http://facreport.iptime.org:8006
@@ -87,13 +120,109 @@ PUBLIC_AUTH_API_URL=http://facreport.iptime.org:5009
 
 ## 4. API 통신 모듈 구현
 
-### 4.1 인증 API 클라이언트 (src/lib/api/auth.js)
+### 4.1 순환 참조 문제 해결을 위한 모듈 구조 수정
 
-```javascript
+순환 참조 문제는 모듈 간에 서로 의존하는 구조가 생길 때 발생합니다. 이를 해결하기 위해 다음과 같이 모듈 구조를 수정합니다.
+
+#### 4.1.1 인증 타입 정의 (src/lib/types/auth.types.ts)
+
+```typescript
+// src/lib/types/auth.types.ts
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+}
+
+export interface AuthState {
+  isAuthenticated: boolean;
+  user: User | null;
+  loading: boolean;
+  error: string | null;
+}
+
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+export interface RegisterData {
+  name: string;
+  email: string;
+  password: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: User;
+}
+```
+
+#### 4.1.2 토큰 관리 유틸리티 분리 (src/lib/utils/token.ts)
+
+```typescript
+// src/lib/utils/token.ts
+import { browser } from '$app/environment';
+
+// 토큰 관리 함수들
+export const getToken = (): string | null => {
+  if (browser) {
+    return localStorage.getItem('token');
+  }
+  return null;
+};
+
+export const setToken = (token: string): void => {
+  if (browser) {
+    localStorage.setItem('token', token);
+  }
+};
+
+export const removeToken = (): void => {
+  if (browser) {
+    localStorage.removeItem('token');
+  }
+};
+```
+
+#### 4.1.3 API 인터셉터 모듈 분리 (src/lib/api/interceptors.ts)
+
+```typescript
+// src/lib/api/interceptors.ts
+import type { AxiosInstance } from 'axios';
+import { goto } from '$app/navigation';
+import { authActions } from '$lib/stores/auth';
+
+// API 인터셉터 설정 함수
+export const setupApiInterceptors = (apiClient: AxiosInstance) => {
+  // 응답 인터셉터: 인증 오류 처리
+  apiClient.interceptors.response.use(
+    response => response,
+    error => {
+      if (error.response && error.response.status === 401) {
+        // 인증 상태 초기화
+        authActions.setUnauthenticated();
+        
+        // 로그인 페이지로 리다이렉트
+        goto('/login');
+      }
+      return Promise.reject(error);
+    }
+  );
+  
+  return apiClient;
+};
+```
+
+### 4.2 인증 API 클라이언트 (src/lib/api/auth.ts)
+
+```typescript
+// src/lib/api/auth.ts
 import axios from 'axios';
 import { browser } from '$app/environment';
-import { goto } from '$app/navigation';
-import { authStore } from '$lib/stores/auth';
+import { getToken, removeToken } from '$lib/utils/token';
+import type { LoginCredentials, RegisterData, AuthResponse, User } from '$lib/types/auth.types';
 
 // Auth API 클라이언트 인스턴스 생성
 const authClient = axios.create({
@@ -106,128 +235,59 @@ const authClient = axios.create({
 // 요청 인터셉터: 토큰 추가
 authClient.interceptors.request.use(config => {
   if (browser) {
-    const token = localStorage.getItem('access_token');
+    const token = getToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-    }
   }
   return config;
 });
 
-// 응답 인터셉터: 토큰 만료 처리
-authClient.interceptors.response.use(
-  response => response,
-  error => {
-    if (error.response && error.response.status === 401) {
-      // 리프레시 토큰으로 재시도 로직 추가 가능
-      authStore.update(state => ({ ...state, isAuthenticated: false, user: null }));
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      goto('/login');
-    }
-    return Promise.reject(error);
-  }
-);
-
-// 인증 API 함수
+// Auth API 함수
 export const authAPI = {
-  // 로그인 (ID/PW)
-  login: async (credentials) => {
-    const response = await authClient.post('/api/v1/auth/local/login', credentials);
-    if (response.data.tokens && response.data.tokens.access_token) {
-      localStorage.setItem('access_token', response.data.tokens.access_token);
-      if (response.data.tokens.refresh_token) {
-        localStorage.setItem('refresh_token', response.data.tokens.refresh_token);
-      }
-      return response.data;
-    }
-    return null;
-  },
-  
-  // 이메일 로그인
-  loginWithEmail: async (credentials) => {
-    const response = await authClient.post('/api/v1/auth/local/login/email', credentials);
-    if (response.data.tokens && response.data.tokens.access_token) {
-      localStorage.setItem('access_token', response.data.tokens.access_token);
-      if (response.data.tokens.refresh_token) {
-        localStorage.setItem('refresh_token', response.data.tokens.refresh_token);
-      }
-      return response.data;
-    }
-    return null;
+  // 로그인
+  login: async (credentials: LoginCredentials): Promise<AuthResponse | null> => {
+    const response = await authClient.post<AuthResponse>('/auth/login', credentials);
+    return response.data;
   },
   
   // 회원가입
-  register: async (userData) => {
-    const response = await authClient.post('/api/v1/auth/local/register', userData);
+  register: async (userData: RegisterData): Promise<AuthResponse> => {
+    const response = await authClient.post<AuthResponse>('/auth/register', userData);
     return response.data;
-  },
-  
-  // 비밀번호 변경
-  changePassword: async (passwordData) => {
-    const response = await authClient.post('/api/v1/auth/local/change-password', passwordData);
-    return response.data;
-  },
-  
-  // 소셜 로그인 URL 가져오기
-  getSocialLoginUrl: (provider, redirectUri) => {
-    return `${import.meta.env.PUBLIC_AUTH_API_URL}/api/v1/auth/social/${provider}/login?redirect_uri=${encodeURIComponent(redirectUri)}`;
   },
   
   // 로그아웃
-  logout: async () => {
-    const refreshToken = localStorage.getItem('refresh_token');
-    if (refreshToken) {
-      try {
-        await authClient.post('/api/v1/auth/common/logout', { refresh_token: refreshToken });
-      } catch (error) {
-        console.error('Logout error:', error);
-      }
+  logout: async (): Promise<void> => {
+    try {
+      await authClient.post('/auth/logout');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      removeToken();
     }
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    authStore.update(state => ({ ...state, isAuthenticated: false, user: null }));
   },
   
   // 현재 사용자 정보 가져오기
-  getCurrentUser: async () => {
-    const response = await authClient.get('/api/v1/users/me');
-    return response.data;
-  },
-  
-  // 사용자 프로필 업데이트
-  updateUserProfile: async (profileData) => {
-    const response = await authClient.patch('/api/v1/users/me', profileData);
+  getCurrentUser: async (): Promise<User> => {
+    const response = await authClient.get<User>('/auth/me');
     return response.data;
   },
   
   // 토큰 갱신
-  refreshToken: async () => {
-    const refreshToken = localStorage.getItem('refresh_token');
-    if (!refreshToken) {
-      throw new Error('No refresh token available');
-    }
-    
-    const response = await authClient.post('/api/v1/auth/common/refresh', {
-      refresh_token: refreshToken
-    });
-    
-    if (response.data.access_token) {
-      localStorage.setItem('access_token', response.data.access_token);
-      return response.data;
-    }
-    return null;
+  refreshToken: async (): Promise<AuthResponse> => {
+    const response = await authClient.post<AuthResponse>('/auth/refresh');
+    return response.data;
   }
 };
 ```
 
-### 4.2 Main API 클라이언트 (src/lib/api/main.js)
+### 4.3 Main API 클라이언트 (src/lib/api/main.ts)
 
-```javascript
+```typescript
+// src/lib/api/main.ts
 import axios from 'axios';
 import { browser } from '$app/environment';
-import { goto } from '$app/navigation';
-import { authStore } from '$lib/stores/auth';
+import { getToken } from '$lib/utils/token';
 
 // Main API 클라이언트 인스턴스 생성
 const mainClient = axios.create({
@@ -240,26 +300,13 @@ const mainClient = axios.create({
 // 요청 인터셉터: 토큰 추가
 mainClient.interceptors.request.use(config => {
   if (browser) {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
   }
   return config;
 });
-
-// 응답 인터셉터: 토큰 만료 처리
-mainClient.interceptors.response.use(
-  response => response,
-  error => {
-    if (error.response && error.response.status === 401) {
-      authStore.update(state => ({ ...state, isAuthenticated: false, user: null }));
-      localStorage.removeItem('token');
-      goto('/login');
-    }
-    return Promise.reject(error);
-  }
-);
 
 // Main API 함수 - 실제 엔드포인트는 API 문서에 맞게 구현
 export const mainAPI = {
@@ -297,28 +344,31 @@ export const mainAPI = {
 
 ## 5. 상태 관리 구현
 
-### 5.1 인증 스토어 (src/lib/stores/auth.js)
+### 5.1 인증 스토어 (src/lib/stores/auth.ts)
 
-```javascript
+```typescript
+// src/lib/stores/auth.ts
 import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
+import { getToken, setToken, removeToken } from '$lib/utils/token';
+import type { AuthState, User } from '$lib/types/auth.types';
 
 // 초기 상태
-const initialState = {
-  isAuthenticated: browser ? !!localStorage.getItem('access_token') : false,
+const initialState: AuthState = {
+  isAuthenticated: browser ? !!getToken() : false,
   user: null,
   loading: false,
   error: null
 };
 
 // 인증 스토어 생성
-export const authStore = writable(initialState);
+export const authStore = writable<AuthState>(initialState);
 
 // 인증 스토어 액션
 export const authActions = {
-  setAuthenticated: (user, accessToken) => {
-    if (browser && accessToken) {
-      localStorage.setItem('access_token', accessToken);
+  setAuthenticated: (user: User, token: string) => {
+    if (browser && token) {
+      setToken(token);
     }
     
     authStore.update(state => ({
@@ -331,8 +381,7 @@ export const authActions = {
   
   setUnauthenticated: () => {
     if (browser) {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
+      removeToken();
     }
     
     authStore.update(state => ({
@@ -342,46 +391,26 @@ export const authActions = {
     }));
   },
   
-  setLoading: (isLoading) => {
+  setLoading: (isLoading: boolean) => {
     authStore.update(state => ({
       ...state,
       loading: isLoading
     }));
   },
   
-  setError: (error) => {
+  setError: (error: string | null) => {
     authStore.update(state => ({
       ...state,
       error
     }));
-  },
-  
-  setUser: (user) => {
-    authStore.update(state => ({
-      ...state,
-      user
-    }));
-  },
-  
-  updateUserProfile: (profileData) => {
-    authStore.update(state => {
-      if (!state.user) return state;
-      
-      return {
-        ...state,
-        user: {
-          ...state.user,
-          ...profileData
-        }
-      };
-    });
   }
 };
 ```
 
-### 5.2 애플리케이션 스토어 (src/lib/stores/app.js)
+### 5.2 애플리케이션 스토어 (src/lib/stores/app.ts)
 
-```javascript
+```typescript
+// src/lib/stores/app.ts
 import { writable } from 'svelte/store';
 
 // 초기 상태
@@ -442,46 +471,29 @@ export const appActions = {
 
 ## 6. 인증 및 라우트 보호
 
-### 6.1 레이아웃 로직 (src/routes/+layout.js)
+### 6.1 레이아웃 로직 (src/routes/+layout.ts)
 
-```javascript
+```typescript
+// src/routes/+layout.ts
 import { authAPI } from '$lib/api/auth';
 import { authStore, authActions } from '$lib/stores/auth';
 import { browser } from '$app/environment';
 import { redirect } from '@sveltejs/kit';
+import { getToken } from '$lib/utils/token';
+import type { LayoutLoad } from './$types';
 
-/** @type {import('./$types').LayoutLoad} */
-export async function load({ url, fetch, params, parent }) {
+export const load: LayoutLoad = async ({ url }) => {
   // 로그인 상태 확인
   if (browser) {
-    const accessToken = localStorage.getItem('access_token');
-    if (accessToken) {
+    const token = getToken();
+    if (token) {
       try {
         authActions.setLoading(true);
         const userData = await authAPI.getCurrentUser();
-        authActions.setAuthenticated(userData, accessToken);
+        authActions.setAuthenticated(userData, token);
       } catch (error) {
         console.error('Failed to get user data:', error);
-        
-        // 액세스 토큰이 만료된 경우 리프레시 토큰으로 갱신 시도
-        const refreshToken = localStorage.getItem('refresh_token');
-        if (refreshToken) {
-          try {
-            const refreshResponse = await authAPI.refreshToken();
-            if (refreshResponse && refreshResponse.access_token) {
-              // 토큰 갱신 성공 후 사용자 정보 다시 조회
-              const userData = await authAPI.getCurrentUser();
-              authActions.setAuthenticated(userData, refreshResponse.access_token);
-            } else {
-              authActions.setUnauthenticated();
-            }
-          } catch (refreshError) {
-            console.error('Failed to refresh token:', refreshError);
-            authActions.setUnauthenticated();
-          }
-        } else {
-          authActions.setUnauthenticated();
-        }
+        authActions.setUnauthenticated();
       } finally {
         authActions.setLoading(false);
       }
@@ -493,20 +505,15 @@ export async function load({ url, fetch, params, parent }) {
                            url.pathname.startsWith('/reports') || 
                            url.pathname.startsWith('/settings');
   
-  const isAuthRoute = url.pathname === '/login' || url.pathname === '/register' || url.pathname.startsWith('/auth/callback');
+  const isAuthRoute = url.pathname === '/login' || url.pathname === '/register';
   
-  let isAuthenticated;
-  let isLoading;
+  let isAuthenticated = false;
+  
+  // authStore의 현재 값 가져오기
   const unsubscribe = authStore.subscribe(state => {
     isAuthenticated = state.isAuthenticated;
-    isLoading = state.loading;
   });
   unsubscribe();
-  
-  // 로딩 중에는 리다이렉션 하지 않음
-  if (isLoading) {
-    return {};
-  }
   
   if (isProtectedRoute && !isAuthenticated) {
     throw redirect(307, '/login');
@@ -516,555 +523,8 @@ export async function load({ url, fetch, params, parent }) {
     throw redirect(307, '/dashboard');
   }
   
-  // 소셜 로그인 콜백 처리
-  if (url.pathname.startsWith('/auth/callback') && url.searchParams.has('code')) {
-    const code = url.searchParams.get('code');
-    const state = url.searchParams.get('state');
-    const provider = url.pathname.split('/').pop(); // 마지막 경로 세그먼트가 provider
-    
-    // 여기서 소셜 로그인 콜백 처리 로직 구현 가능
-    // 실제 구현은 별도의 페이지나 API 호출로 처리하는 것이 좋음
-  }
-  
   return {};
-}
-```
-
-### 6.2 로그인 페이지 (src/routes/(auth)/login/+page.svelte)
-
-```svelte
-<script>
-  import { authAPI } from '$lib/api/auth';
-  import { authStore, authActions } from '$lib/stores/auth';
-  import { goto } from '$app/navigation';
-  
-  let email = '';
-  let password = '';
-  let username = '';
-  let loginType = 'email'; // 'email' 또는 'username'
-  let loading = false;
-  let error = '';
-  
-  async function handleLogin() {
-    error = '';
-    loading = true;
-    
-    try {
-      let response;
-      
-      if (loginType === 'email') {
-        response = await authAPI.loginWithEmail({ email, password });
-      } else {
-        response = await authAPI.login({ username, password });
-      }
-      
-      if (response && response.tokens && response.tokens.access_token) {
-        authActions.setAuthenticated(response.user, response.tokens.access_token);
-        goto('/dashboard');
-      } else {
-        error = '로그인에 실패했습니다. 다시 시도해주세요.';
-      }
-    } catch (err) {
-      console.error('Login error:', err);
-      error = err.response?.data?.message || '로그인 중 오류가 발생했습니다.';
-    } finally {
-      loading = false;
-    }
-  }
-  
-  function toggleLoginType() {
-    loginType = loginType === 'email' ? 'username' : 'email';
-  }
-</script>
-
-<div class="login-container">
-  <h1>로그인</h1>
-  
-  {#if error}
-    <div class="error-message">{error}</div>
-  {/if}
-  
-  <form on:submit|preventDefault={handleLogin}>
-    <div class="login-type-toggle">
-      <button 
-        type="button" 
-        class:active={loginType === 'email'} 
-        on:click={() => loginType = 'email'}
-      >
-        이메일 로그인
-      </button>
-      <button 
-        type="button" 
-        class:active={loginType === 'username'} 
-        on:click={() => loginType = 'username'}
-      >
-        아이디 로그인
-      </button>
-    </div>
-    
-    {#if loginType === 'email'}
-      <div class="form-group">
-        <label for="email">이메일</label>
-        <input 
-          type="email" 
-          id="email" 
-          bind:value={email} 
-          required 
-          disabled={loading}
-        />
-      </div>
-    {:else}
-      <div class="form-group">
-        <label for="username">아이디</label>
-        <input 
-          type="text" 
-          id="username" 
-          bind:value={username} 
-          required 
-          disabled={loading}
-        />
-      </div>
-    {/if}
-    
-    <div class="form-group">
-      <label for="password">비밀번호</label>
-      <input 
-        type="password" 
-        id="password" 
-        bind:value={password} 
-        required 
-        disabled={loading}
-      />
-    </div>
-    
-    <button type="submit" disabled={loading} class="login-button">
-      {#if loading}
-        로그인 중...
-      {:else}
-        로그인
-      {/if}
-    </button>
-    
-    <div class="social-login">
-      <p>소셜 계정으로 로그인</p>
-      <div class="social-buttons">
-        <a href={authAPI.getSocialLoginUrl('google', window.location.origin + '/auth/callback')} class="social-button google">
-          Google로 로그인
-        </a>
-        <a href={authAPI.getSocialLoginUrl('kakao', window.location.origin + '/auth/callback')} class="social-button kakao">
-          Kakao로 로그인
-        </a>
-      </div>
-    </div>
-    
-    <div class="register-link">
-      <a href="/register">계정이 없으신가요? 회원가입하기</a>
-    </div>
-  </form>
-</div>
-
-<style>
-  .login-container {
-    max-width: 400px;
-    margin: 0 auto;
-    padding: 2rem;
-  }
-  
-  .error-message {
-    background-color: #f8d7da;
-    color: #721c24;
-    padding: 0.5rem;
-    margin-bottom: 1rem;
-    border-radius: 4px;
-  }
-  
-  .login-type-toggle {
-    display: flex;
-    margin-bottom: 1rem;
-    border-radius: 4px;
-    overflow: hidden;
-  }
-  
-  .login-type-toggle button {
-    flex: 1;
-    padding: 0.5rem;
-    background-color: #f5f5f5;
-    border: none;
-    cursor: pointer;
-  }
-  
-  .login-type-toggle button.active {
-    background-color: #4A90E2;
-    color: white;
-  }
-  
-  .form-group {
-    margin-bottom: 1rem;
-  }
-  
-  label {
-    display: block;
-    margin-bottom: 0.5rem;
-  }
-  
-  input {
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-  
-  .login-button {
-    width: 100%;
-    padding: 0.75rem;
-    background-color: #4A90E2;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    margin-bottom: 1rem;
-  }
-  
-  .login-button:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-  }
-  
-  .social-login {
-    margin: 1rem 0;
-    text-align: center;
-  }
-  
-  .social-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  .social-button {
-    display: block;
-    padding: 0.5rem;
-    border-radius: 4px;
-    text-decoration: none;
-    text-align: center;
-  }
-  
-  .social-button.google {
-    background-color: #fff;
-    color: #333;
-    border: 1px solid #ccc;
-  }
-  
-  .social-button.kakao {
-    background-color: #FEE500;
-    color: #000;
-  }
-  
-  .register-link {
-    margin-top: 1rem;
-    text-align: center;
-  }
-</style>
-```
-
-### 6.3 회원가입 페이지 (src/routes/(auth)/register/+page.svelte)
-
-```svelte
-<script>
-  import { authAPI } from '$lib/api/auth';
-  import { goto } from '$app/navigation';
-  
-  let username = '';
-  let email = '';
-  let password = '';
-  let confirmPassword = '';
-  let name = '';
-  let loading = false;
-  let error = '';
-  
-  // 유효성 검사 상태
-  let usernameValid = true;
-  let emailValid = true;
-  let passwordValid = true;
-  let passwordMatch = true;
-  let nameValid = true;
-  
-  // 유효성 검사 메시지
-  let usernameError = '';
-  let emailError = '';
-  let passwordError = '';
-  let confirmPasswordError = '';
-  let nameError = '';
-  
-  // 유효성 검사 함수
-  function validateUsername() {
-    if (username.length < 4) {
-      usernameValid = false;
-      usernameError = '아이디는 최소 4자 이상이어야 합니다.';
-    } else {
-      usernameValid = true;
-      usernameError = '';
-    }
-  }
-  
-  function validateEmail() {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      emailValid = false;
-      emailError = '유효한 이메일 주소를 입력해주세요.';
-    } else {
-      emailValid = true;
-      emailError = '';
-    }
-  }
-  
-  function validatePassword() {
-    if (password.length < 8) {
-      passwordValid = false;
-      passwordError = '비밀번호는 최소 8자 이상이어야 합니다.';
-    } else {
-      passwordValid = true;
-      passwordError = '';
-    }
-  }
-  
-  function validateConfirmPassword() {
-    if (password !== confirmPassword) {
-      passwordMatch = false;
-      confirmPasswordError = '비밀번호가 일치하지 않습니다.';
-    } else {
-      passwordMatch = true;
-      confirmPasswordError = '';
-    }
-  }
-  
-  function validateName() {
-    if (name.length < 2) {
-      nameValid = false;
-      nameError = '이름은 최소 2자 이상이어야 합니다.';
-    } else {
-      nameValid = true;
-      nameError = '';
-    }
-  }
-  
-  // 폼 전체 유효성 검사
-  function isFormValid() {
-    validateUsername();
-    validateEmail();
-    validatePassword();
-    validateConfirmPassword();
-    validateName();
-    
-    return usernameValid && emailValid && passwordValid && passwordMatch && nameValid;
-  }
-  
-  async function handleRegister() {
-    if (!isFormValid()) {
-      return;
-    }
-    
-    error = '';
-    loading = true;
-    
-    try {
-      const userData = {
-        username,
-        email,
-        password,
-        name
-      };
-      
-      const response = await authAPI.register(userData);
-      
-      if (response && response.user) {
-        // 회원가입 성공 후 로그인 페이지로 이동
-        goto('/login?registered=true');
-      } else {
-        error = '회원가입에 실패했습니다. 다시 시도해주세요.';
-      }
-    } catch (err) {
-      console.error('Registration error:', err);
-      error = err.response?.data?.message || '회원가입 중 오류가 발생했습니다.';
-    } finally {
-      loading = false;
-    }
-  }
-</script>
-
-<div class="register-container">
-  <h1>회원가입</h1>
-  
-  {#if error}
-    <div class="error-message">{error}</div>
-  {/if}
-  
-  <form on:submit|preventDefault={handleRegister}>
-    <div class="form-group">
-      <label for="username">아이디 *</label>
-      <input 
-        type="text" 
-        id="username" 
-        bind:value={username} 
-        on:blur={validateUsername}
-        class:invalid={!usernameValid}
-        required 
-        disabled={loading}
-      />
-      {#if !usernameValid}
-        <div class="field-error">{usernameError}</div>
-      {/if}
-      <div class="field-hint">최소 4자 이상의 아이디를 입력하세요.</div>
-    </div>
-    
-    <div class="form-group">
-      <label for="email">이메일 *</label>
-      <input 
-        type="email" 
-        id="email" 
-        bind:value={email} 
-        on:blur={validateEmail}
-        class:invalid={!emailValid}
-        required 
-        disabled={loading}
-      />
-      {#if !emailValid}
-        <div class="field-error">{emailError}</div>
-      {/if}
-    </div>
-    
-    <div class="form-group">
-      <label for="password">비밀번호 *</label>
-      <input 
-        type="password" 
-        id="password" 
-        bind:value={password} 
-        on:blur={validatePassword}
-        class:invalid={!passwordValid}
-        required 
-        disabled={loading}
-      />
-      {#if !passwordValid}
-        <div class="field-error">{passwordError}</div>
-      {/if}
-      <div class="field-hint">최소 8자 이상의 비밀번호를 입력하세요.</div>
-    </div>
-    
-    <div class="form-group">
-      <label for="confirmPassword">비밀번호 확인 *</label>
-      <input 
-        type="password" 
-        id="confirmPassword" 
-        bind:value={confirmPassword} 
-        on:blur={validateConfirmPassword}
-        class:invalid={!passwordMatch}
-        required 
-        disabled={loading}
-      />
-      {#if !passwordMatch}
-        <div class="field-error">{confirmPasswordError}</div>
-      {/if}
-    </div>
-    
-    <div class="form-group">
-      <label for="name">이름 *</label>
-      <input 
-        type="text" 
-        id="name" 
-        bind:value={name} 
-        on:blur={validateName}
-        class:invalid={!nameValid}
-        required 
-        disabled={loading}
-      />
-      {#if !nameValid}
-        <div class="field-error">{nameError}</div>
-      {/if}
-      <div class="field-hint">실명을 입력하세요.</div>
-    </div>
-    
-    <button type="submit" disabled={loading} class="register-button">
-      {#if loading}
-        회원가입 중...
-      {:else}
-        회원가입
-      {/if}
-    </button>
-    
-    <div class="login-link">
-      <a href="/login">이미 계정이 있으신가요? 로그인하기</a>
-    </div>
-  </form>
-</div>
-
-<style>
-  .register-container {
-    max-width: 400px;
-    margin: 0 auto;
-    padding: 2rem;
-  }
-  
-  .error-message {
-    background-color: #f8d7da;
-    color: #721c24;
-    padding: 0.5rem;
-    margin-bottom: 1rem;
-    border-radius: 4px;
-  }
-  
-  .form-group {
-    margin-bottom: 1rem;
-  }
-  
-  label {
-    display: block;
-    margin-bottom: 0.5rem;
-  }
-  
-  input {
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-  
-  input.invalid {
-    border-color: #dc3545;
-  }
-  
-  .field-error {
-    color: #dc3545;
-    font-size: 0.875rem;
-    margin-top: 0.25rem;
-  }
-  
-  .field-hint {
-    color: #6c757d;
-    font-size: 0.875rem;
-    margin-top: 0.25rem;
-  }
-  
-  .register-button {
-    width: 100%;
-    padding: 0.75rem;
-    background-color: #4A90E2;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    margin-top: 1rem;
-  }
-  
-  .register-button:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-  }
-  
-  .login-link {
-    margin-top: 1rem;
-    text-align: center;
-  }
-</style>
+};
 ```
 
 ## 7. 대시보드 페이지 구현
@@ -1571,9 +1031,9 @@ export async function load({ url, fetch, params, parent }) {
 
 ## 9. API 오류 처리
 
-### 9.1 공통 오류 처리 유틸리티 (src/lib/utils/error-handler.js)
+### 9.1 공통 오류 처리 유틸리티 (src/lib/utils/error-handler.ts)
 
-```javascript
+```typescript
 import { appActions } from '$lib/stores/app';
 
 /**
@@ -1687,9 +1147,9 @@ export function handleApiError(error, options = {}) {
 
 ## 10. 배포 구성
 
-### 10.1 SvelteKit 어댑터 구성 (svelte.config.js)
+### 10.1 SvelteKit 어댑터 구성 (svelte.config.ts)
 
-```javascript
+```typescript
 import adapter from '@sveltejs/adapter-node';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
@@ -1787,6 +1247,8 @@ CMD ["node", "build/index.js"]
 3. **상태 관리**: Svelte의 내장 스토어를 활용하여 효율적인 상태 관리를 구현했습니다.
 4. **오류 처리**: 일관된 오류 처리 메커니즘을 통해 사용자 경험을 향상했습니다.
 5. **반응형 디자인**: 모바일 기기를 포함한 다양한 디바이스에서 원활하게 작동합니다.
+6. **TypeScript 지원**: 타입 안전성을 통해 개발 경험과 코드 품질을 향상시켰습니다.
+7. **모듈 구조화**: 순환 참조 문제를 해결하기 위한 모듈 구조화로 코드의 안정성을 높였습니다.
 
 ### 추가 개선 가능 사항:
 
@@ -1796,4 +1258,55 @@ CMD ["node", "build/index.js"]
 4. **성능 최적화**: 코드 분할, 이미지 최적화 등을 통한 성능 향상
 5. **모니터링 도구**: 프론트엔드 오류 및 성능 모니터링을 위한 도구 통합
 
-이 작업지시서를 기반으로 현대적이고 견고한 프론트엔드 애플리케이션을 개발할 수 있습니다.
+## 12. 개발 일정 및 작업 계획
+
+### 1일차: 프로젝트 설정 및 기본 구조 구축
+
+- [ ] SvelteKit 프로젝트 생성
+- [ ] 의존성 설치 (axios, tailwindcss 등)
+- [ ] TypeScript 설치 및 설정
+  ```bash
+  npm install -D typescript @tsconfig/svelte
+  ```
+- [ ] `tsconfig.json` 생성
+  ```bash
+  npx svelte-add typescript
+  ```
+- [ ] Vite 설정 파일 생성 (`vite.config.ts`)
+- [ ] 타입 정의 파일 구성
+  ```bash
+  mkdir -p src/lib/types
+  ```
+- [ ] 프로젝트 구조 설정
+- [ ] 환경 변수 설정 (.env 파일)
+
+### 2일차: 인증 모듈 및 API 클라이언트 구현
+
+- [ ] 인증 타입 정의 (`src/lib/types/auth.types.ts`)
+- [ ] 토큰 관리 유틸리티 분리 (`src/lib/utils/token.ts`)
+- [ ] API 인터셉터 모듈 분리 (`src/lib/api/interceptors.ts`)
+- [ ] Auth API 클라이언트 구현
+- [ ] Main API 클라이언트 구현
+- [ ] 인증 스토어 구현
+- [ ] 애플리케이션 스토어 구현
+
+### 3일차: 인증 페이지 및 라우트 보호 구현
+
+- [ ] 레이아웃 로직 구현 (인증 체크)
+- [ ] 로그인 페이지 구현
+- [ ] 회원가입 페이지 구현
+- [ ] 소셜 로그인 연동
+
+### 4일차: 대시보드 및 기본 UI 컴포넌트 구현
+
+- [ ] 메인 레이아웃 구현
+- [ ] 사이드바 컴포넌트 구현
+- [ ] 네비게이션 바 구현
+- [ ] 대시보드 페이지 구현
+
+### 5일차: 오류 처리 및 마무리
+
+- [ ] 공통 오류 처리 유틸리티 구현
+- [ ] 알림 컴포넌트 구현
+- [ ] 배포 설정 (SvelteKit 어댑터, Docker)
+- [ ] 최종 테스트 및 버그 수정
