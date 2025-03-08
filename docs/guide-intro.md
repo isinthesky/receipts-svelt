@@ -1,12 +1,14 @@
-# 프론트엔드 개발 작업지시서: Svelte 프레임워크 구현
+# Svelte 프레임워크 프론트엔드 개발 상세 가이드
 
 ## 1. 프로젝트 개요
 
 본 문서는 Svelte 프레임워크를 사용하여 개발할 프론트엔드 서버의 작업지시서입니다. 이 프론트엔드는 다음 두 서버와 통신합니다:
-- **Main API 서버** (http://facreport.iptime.org:8006/docs)
+- **Main API 서버** (http://facreport.iptime.org:5008/docs)
 - **Auth API 서버** (http://facreport.iptime.org:5009/docs)
 
-## 2. 프로젝트 구조
+## 2. 프로젝트 주요 모델 및 관계
+
+## 3. 프로젝트 구조
 
 ```
 src/
@@ -14,24 +16,37 @@ src/
 │   ├── api/                  # API 통신 관련 모듈
 │   │   ├── main.ts           # Main API 통신 클라이언트
 │   │   ├── auth.ts           # Auth API 통신 클라이언트
+│   │   ├── task.ts           # 태스크 API
+│   │   ├── image.ts          # 이미지 API
+│   │   ├── receipt.ts        # 영수증 API
 │   │   └── interceptors.ts   # API 요청/응답 인터셉터
 │   ├── components/           # 재사용 가능한 컴포넌트
 │   │   ├── ui/               # 기본 UI 컴포넌트
 │   │   └── features/         # 기능 중심 컴포넌트
 │   ├── stores/               # 상태 관리 스토어
 │   │   ├── auth.ts           # 인증 관련 스토어
-│   │   └── app.ts            # 애플리케이션 상태 스토어
+│   │   ├── app.ts            # 애플리케이션 상태 스토어
+│   │   ├── tasks.ts          # 태스크 관련 스토어
+│   │   ├── images.ts         # 이미지 관련 스토어
+│   │   └── receipts.ts       # 영수증 관련 스토어
 │   ├── types/                # 타입 정의
-│   │   └── auth.types.ts     # 인증 관련 타입 정의
+│   │   ├── auth.types.ts     # 인증 관련 타입 정의
+│   │   ├── task.types.ts     # 태스크 관련 타입 정의
+│   │   ├── image.types.ts    # 이미지 관련 타입 정의
+│   │   └── receipt.types.ts  # 영수증 관련 타입 정의
 │   ├── utils/                # 유틸리티 함수
-│   │   └── token.ts          # 토큰 관리 유틸리티
+│   │   ├── token.ts          # 토큰 관리 유틸리티
+│   │   └── error-handler.ts  # 오류 처리 유틸리티
 │   └── constants/            # 상수 정의
 ├── routes/                   # SvelteKit 라우트
 │   ├── (auth)/               # 인증 관련 라우트 그룹
 │   │   ├── login/+page.svelte
 │   │   └── register/+page.svelte
 │   ├── (protected)/          # 인증 필요 라우트 그룹
-│   │   └── dashboard/+page.svelte
+│   │   ├── dashboard/+page.svelte
+│   │   ├── tasks/            # 태스크 관련 라우트
+│   │   ├── images/           # 이미지 관련 라우트
+│   │   └── receipts/         # 영수증 관련 라우트
 │   ├── +layout.svelte        # 루트 레이아웃
 │   └── +layout.ts            # 레이아웃 로직(인증 체크 등)
 ├── app.html                  # HTML 템플릿
@@ -39,1009 +54,230 @@ src/
 └── tsconfig.json             # TypeScript 설정
 ```
 
-## 3. 환경 설정 및 초기 설정
+## 4. 주요 API 엔드포인트
 
-### 3.1 개발 환경 설정
+### Auth API 엔드포인트 (Swagger 기준, Auth API 서버: http://facreport.iptime.org:5009)
+- `POST /api/v1/auth/login` - 로그인 (이메일/비밀번호 필요)
+- `POST /api/v1/auth/register` - 회원가입
+- `POST /api/v1/auth/refresh` - 토큰 갱신
+- `GET /api/v1/auth/me` - 현재 사용자 정보 조회
+- `POST /api/v1/auth/logout` - 로그아웃
 
-```bash
-# SvelteKit 프로젝트 생성
-npm create svelte@latest my-facreport-app
-cd my-facreport-app
+### Task API 엔드포인트 (Swagger 기준, Main API 서버: http://facreport.iptime.org:5008)
+- `GET /api/v1/tasks` - 태스크 목록 조회
+- `GET /api/v1/tasks/{id}` - 특정 태스크 상세 조회
+- `POST /api/v1/tasks` - 새 태스크 생성
+- `PUT /api/v1/tasks/{id}` - 태스크 업데이트
+- `DELETE /api/v1/tasks/{id}` - 태스크 삭제
 
-# 의존성 설치
-npm install
+### Image API 엔드포인트 (Swagger 기준, Main API 서버: http://facreport.iptime.org:5008)
+- `GET /api/v1/tasks/{task_id}/images` - 태스크별 이미지 목록 조회
+- `GET /api/v1/images/{id}` - 특정 이미지 상세 조회
+- `POST /api/v1/tasks/{task_id}/images` - 이미지 업로드
+- `PUT /api/v1/images/{id}` - 이미지 정보 업데이트
+- `DELETE /api/v1/images/{id}` - 이미지 삭제
+- `POST /api/v1/main/images/receipt_area/{image_id}` - **영수증 영역 생성**
+- `PATCH /api/v1/main/images/receipt_area/{image_id}` - **영수증 영역 선택**
+- `POST /api/v1/main/images/extract_ocr/{image_id}` - **영수증의 문자열 추출**
 
-# TypeScript 설치 및 설정
-npm install -D typescript @tsconfig/svelte
-npx svelte-add typescript
 
-# API 통신을 위한 라이브러리
-npm install axios
+### Receipt API 엔드포인트 (Swagger 기준, Main API 서버: http://facreport.iptime.org:5008)
+- `GET /api/v1/images/{image_id}/receipts` - 이미지별 영수증 목록 조회
+- `GET /api/v1/receipts/{id}` - 특정 영수증 상세 조회
+- `POST /api/v1/images/{image_id}/receipts` - 영수증 정보 추가
+- `PUT /api/v1/receipts/{id}` - 영수증 정보 업데이트
+- `DELETE /api/v1/receipts/{id}` - 영수증 정보 삭제
+- `POST /api/main/v1/receipts/ask_gpt` - **Analyze Receipt With Gpt**
 
-# UI 컴포넌트 라이브러리 (선택사항)
-npm install -D tailwindcss postcss autoprefixer
-npx tailwindcss init -p
-```
+## 5. 개발 규칙 및 지침
 
-### 3.2 TypeScript 설정 (tsconfig.json)
+### 5.1 코드 구성 원칙
 
-```json
-{
-  "extends": "@tsconfig/svelte/tsconfig.json",
-  "compilerOptions": {
-    "target": "ESNext",
-    "useDefineForClassFields": true,
-    "module": "ESNext",
-    "resolveJsonModule": true,
-    "allowJs": true,
-    "checkJs": true,
-    "isolatedModules": true,
-    "strict": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "baseUrl": ".",
-    "paths": {
-      "$lib": ["src/lib"],
-      "$lib/*": ["src/lib/*"]
-    }
-  },
-  "include": ["src/**/*.d.ts", "src/**/*.ts", "src/**/*.js", "src/**/*.svelte"],
-  "references": [{ "path": "./tsconfig.node.json" }]
-}
-```
+#### 모듈 분리 및 책임 명확화
+- **단일 책임 원칙**: 각 모듈은 하나의 책임만 가져야 합니다.
+- **API 클라이언트 분리**: 각 엔티티(태스크, 이미지, 영수증)별로 독립적인 API 클라이언트 모듈을 생성합니다.
+- **스토어 분리**: 각 엔티티별로 독립적인 스토어를 구현하여 상태 관리를 캡슐화합니다.
 
-### 3.3 Vite 설정 (vite.config.ts)
+#### 순환 참조 방지
+- 모듈 간 의존성 방향을 단방향으로 유지합니다(예: 타입 → 유틸리티 → API → 스토어 → 컴포넌트).
+- 공통 유틸리티와 타입은 별도 파일로 분리하여 순환 참조를 방지합니다.
 
+### 5.2 타입 정의 규칙
+
+- 모든 데이터 구조는 TypeScript 인터페이스로 명확히 정의합니다.
+- API 응답 타입과 내부 사용 타입을 구분합니다.
+- 기본값이 있는 속성과 선택적 속성을 명확히 구분합니다.
+
+예제:
 ```typescript
-import { defineConfig } from 'vite';
-import { svelte } from '@sveltejs/vite-plugin-svelte';
-import path from 'path';
-
-// https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [svelte()],
-  resolve: {
-    alias: {
-      $lib: path.resolve('./src/lib')
-    }
-  },
-  server: {
-    port: 5173
-  }
-});
-```
-
-### 3.4 환경 변수 설정 (.env 파일)
-
-```
-PUBLIC_MAIN_API_URL=http://facreport.iptime.org:8006
-PUBLIC_AUTH_API_URL=http://facreport.iptime.org:5009
-```
-
-## 4. API 통신 모듈 구현
-
-### 4.1 순환 참조 문제 해결을 위한 모듈 구조 수정
-
-순환 참조 문제는 모듈 간에 서로 의존하는 구조가 생길 때 발생합니다. 이를 해결하기 위해 다음과 같이 모듈 구조를 수정합니다.
-
-#### 4.1.1 인증 타입 정의 (src/lib/types/auth.types.ts)
-
-```typescript
-// src/lib/types/auth.types.ts
-export interface User {
+// 공통 필드 재사용 (공유 속성)
+interface BaseEntity {
   id: string;
-  email: string;
-  name: string;
-  role: string;
+  created_at: string;
+  updated_at: string;
+  state: number; // 1: enable, 2: hide, 0: disable
 }
 
-export interface AuthState {
-  isAuthenticated: boolean;
-  user: User | null;
-  loading: boolean;
-  error: string | null;
-}
-
-export interface LoginCredentials {
-  email: string;
-  password: string;
-}
-
-export interface RegisterData {
-  name: string;
-  email: string;
-  password: string;
-}
-
-export interface AuthResponse {
-  token: string;
-  user: User;
+// 태스크 인터페이스
+export interface Task extends BaseEntity {
+  user_id: string;
+  task_name: string;
+  description: string | null;
+  due_date: string | null;
+  receipts: any | null;
 }
 ```
 
-#### 4.1.2 토큰 관리 유틸리티 분리 (src/lib/utils/token.ts)
+### 5.3 API 클라이언트 구현 규칙
 
+- Axios 인스턴스를 사용하여 일관된 설정을 공유합니다.
+- 인터셉터를 통해 토큰 관리와 오류 처리를 중앙화합니다.
+- 모든 API 함수는 비동기(async/await) 패턴을 사용합니다.
+- API 오류 처리를 통일된 방식으로 구현합니다.
+
+예제 구조:
 ```typescript
-// src/lib/utils/token.ts
-import { browser } from '$app/environment';
-
-// 토큰 관리 함수들
-export const getToken = (): string | null => {
-  if (browser) {
-    return localStorage.getItem('token');
-  }
-  return null;
-};
-
-export const setToken = (token: string): void => {
-  if (browser) {
-    localStorage.setItem('token', token);
-  }
-};
-
-export const removeToken = (): void => {
-  if (browser) {
-    localStorage.removeItem('token');
-  }
-};
-```
-
-#### 4.1.3 API 인터셉터 모듈 분리 (src/lib/api/interceptors.ts)
-
-```typescript
-// src/lib/api/interceptors.ts
-import type { AxiosInstance } from 'axios';
-import { goto } from '$app/navigation';
-import { authActions } from '$lib/stores/auth';
-
-// API 인터셉터 설정 함수
-export const setupApiInterceptors = (apiClient: AxiosInstance) => {
-  // 응답 인터셉터: 인증 오류 처리
-  apiClient.interceptors.response.use(
-    response => response,
-    error => {
-      if (error.response && error.response.status === 401) {
-        // 인증 상태 초기화
-        authActions.setUnauthenticated();
-        
-        // 로그인 페이지로 리다이렉트
-        goto('/login');
-      }
-      return Promise.reject(error);
-    }
-  );
-  
-  return apiClient;
-};
-```
-
-### 4.2 인증 API 클라이언트 (src/lib/api/auth.ts)
-
-```typescript
-// src/lib/api/auth.ts
-import axios from 'axios';
-import { browser } from '$app/environment';
-import { getToken, removeToken } from '$lib/utils/token';
-import type { LoginCredentials, RegisterData, AuthResponse, User } from '$lib/types/auth.types';
-
-// Auth API 클라이언트 인스턴스 생성
-const authClient = axios.create({
-  baseURL: import.meta.env.PUBLIC_AUTH_API_URL,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
-
-// 요청 인터셉터: 토큰 추가
-authClient.interceptors.request.use(config => {
-  if (browser) {
-    const token = getToken();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// Auth API 함수
-export const authAPI = {
-  // 로그인
-  login: async (credentials: LoginCredentials): Promise<AuthResponse | null> => {
-    const response = await authClient.post<AuthResponse>('/auth/login', credentials);
-    return response.data;
-  },
-  
-  // 회원가입
-  register: async (userData: RegisterData): Promise<AuthResponse> => {
-    const response = await authClient.post<AuthResponse>('/auth/register', userData);
-    return response.data;
-  },
-  
-  // 로그아웃
-  logout: async (): Promise<void> => {
-    try {
-      await authClient.post('/auth/logout');
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      removeToken();
-    }
-  },
-  
-  // 현재 사용자 정보 가져오기
-  getCurrentUser: async (): Promise<User> => {
-    const response = await authClient.get<User>('/auth/me');
-    return response.data;
-  },
-  
-  // 토큰 갱신
-  refreshToken: async (): Promise<AuthResponse> => {
-    const response = await authClient.post<AuthResponse>('/auth/refresh');
-    return response.data;
-  }
-};
-```
-
-### 4.3 Main API 클라이언트 (src/lib/api/main.ts)
-
-```typescript
-// src/lib/api/main.ts
-import axios from 'axios';
-import { browser } from '$app/environment';
-import { getToken } from '$lib/utils/token';
-
-// Main API 클라이언트 인스턴스 생성
-const mainClient = axios.create({
+// 1. Axios 인스턴스 생성
+const taskClient = axios.create({
   baseURL: import.meta.env.PUBLIC_MAIN_API_URL,
-  headers: {
-    'Content-Type': 'application/json'
-  }
+  headers: { 'Content-Type': 'application/json' }
 });
 
-// 요청 인터셉터: 토큰 추가
-mainClient.interceptors.request.use(config => {
-  if (browser) {
-    const token = getToken();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+// 2. 인터셉터 설정
+setupApiInterceptors(taskClient);
+
+// 3. API 함수 구현
+export const taskAPI = {
+  getTasks: async (params) => {
+    try {
+      const response = await taskClient.get('/tasks', { params });
+      return response.data;
+    } catch (error) {
+      return handleApiError(error, { defaultMessage: '태스크 로드 실패' });
     }
-  }
-  return config;
-});
-
-// Main API 함수 - 실제 엔드포인트는 API 문서에 맞게 구현
-export const mainAPI = {
-  // 사용자 데이터 가져오기
-  getUserData: async () => {
-    const response = await mainClient.get('/users/data');
-    return response.data;
   },
-  
-  // 보고서 목록 가져오기
-  getReports: async (params) => {
-    const response = await mainClient.get('/reports', { params });
-    return response.data;
-  },
-  
-  // 특정 보고서 상세 정보 가져오기
-  getReportDetail: async (reportId) => {
-    const response = await mainClient.get(`/reports/${reportId}`);
-    return response.data;
-  },
-  
-  // 보고서 생성
-  createReport: async (reportData) => {
-    const response = await mainClient.post('/reports', reportData);
-    return response.data;
-  },
-  
-  // 보고서 업데이트
-  updateReport: async (reportId, reportData) => {
-    const response = await mainClient.put(`/reports/${reportId}`, reportData);
-    return response.data;
-  }
+  // 나머지 API 함수들...
 };
 ```
 
-## 5. 상태 관리 구현
+### 5.4 상태 관리 규칙
 
-### 5.1 인증 스토어 (src/lib/stores/auth.ts)
+#### 스토어 구현 원칙
+- Svelte의 writable 스토어를 사용하여 상태를 관리합니다.
+- 각 스토어는 상태와 액션을 함께 제공하는 구조로 구현합니다.
+- 비동기 작업은 스토어 액션 내에서 처리하고, 로딩 및 오류 상태를 함께 관리합니다.
 
 ```typescript
-// src/lib/stores/auth.ts
-import { writable } from 'svelte/store';
-import { browser } from '$app/environment';
-import { getToken, setToken, removeToken } from '$lib/utils/token';
-import type { AuthState, User } from '$lib/types/auth.types';
-
-// 초기 상태
-const initialState: AuthState = {
-  isAuthenticated: browser ? !!getToken() : false,
-  user: null,
+// 1. 초기 상태 정의
+const initialState = {
+  tasks: [],
+  currentTask: null,
   loading: false,
   error: null
 };
 
-// 인증 스토어 생성
-export const authStore = writable<AuthState>(initialState);
+// 2. 스토어 생성
+export const taskStore = writable(initialState);
 
-// 인증 스토어 액션
-export const authActions = {
-  setAuthenticated: (user: User, token: string) => {
-    if (browser && token) {
-      setToken(token);
-    }
+// 3. 스토어 액션 정의
+export const taskActions = {
+  setLoading: (isLoading) => {
+    taskStore.update(state => ({ ...state, loading: isLoading }));
+  },
+  
+  // CRUD 액션들...
+  
+  // 비동기 데이터 로드 액션
+  loadTasks: async () => {
+    taskActions.setLoading(true);
     
-    authStore.update(state => ({
-      ...state,
-      isAuthenticated: true,
-      user,
-      error: null
-    }));
-  },
-  
-  setUnauthenticated: () => {
-    if (browser) {
-      removeToken();
+    try {
+      const tasks = await taskAPI.getTasks();
+      taskStore.update(state => ({ ...state, tasks, error: null }));
+    } catch (error) {
+      taskStore.update(state => ({
+        ...state, 
+        error: error.message || '태스크 로드 실패'
+      }));
+    } finally {
+      taskActions.setLoading(false);
     }
-    
-    authStore.update(state => ({
-      ...state,
-      isAuthenticated: false,
-      user: null
-    }));
-  },
-  
-  setLoading: (isLoading: boolean) => {
-    authStore.update(state => ({
-      ...state,
-      loading: isLoading
-    }));
-  },
-  
-  setError: (error: string | null) => {
-    authStore.update(state => ({
-      ...state,
-      error
-    }));
   }
 };
 ```
 
-### 5.2 애플리케이션 스토어 (src/lib/stores/app.ts)
+#### 컴포넌트에서 스토어 사용 규칙
+- 컴포넌트에서는 스토어를 구독하여 최신 상태에 접근합니다.
+- 컴포넌트에서는 UI 로직만 처리하고, 데이터 로직은 스토어 액션에 위임합니다.
 
-```typescript
-// src/lib/stores/app.ts
-import { writable } from 'svelte/store';
+### 5.5 컴포넌트 설계 규칙
 
-// 초기 상태
-const initialState = {
-  isDarkMode: false,
-  sidebarOpen: true,
-  notifications: [],
-  currentPage: 'dashboard'
-};
+#### 컴포넌트 계층 구조
+- **UI 컴포넌트**: 순수 스타일링과 기본 동작만 담당하는 재사용 가능한 컴포넌트
+- **특성 컴포넌트**: 특정 기능에 특화된 컴포넌트(예: ImageUpload, ReceiptOcrView)
+- **페이지 컴포넌트**: 라우트에 연결되는 최상위 컴포넌트
 
-// 앱 스토어 생성
-export const appStore = writable(initialState);
+#### 속성(Props) 관리
+- 모든 컴포넌트 속성은 타입을 명시적으로 정의합니다.
+- 필수 속성과 선택적 속성을 명확히 구분합니다.
+- 기본값을 사용하여 컴포넌트의 유연성을 높입니다.
 
-// 앱 스토어 액션
-export const appActions = {
-  toggleDarkMode: () => {
-    appStore.update(state => ({
-      ...state,
-      isDarkMode: !state.isDarkMode
-    }));
-  },
+```svelte
+<script>
+  import { createEventDispatcher } from 'svelte';
   
-  toggleSidebar: () => {
-    appStore.update(state => ({
-      ...state,
-      sidebarOpen: !state.sidebarOpen
-    }));
-  },
+  // 속성 정의
+  export let task; // 필수 속성
+  export let editable = false; // 선택적 속성 (기본값 제공)
   
-  setCurrentPage: (page) => {
-    appStore.update(state => ({
-      ...state,
-      currentPage: page
-    }));
-  },
+  const dispatch = createEventDispatcher();
   
-  addNotification: (notification) => {
-    appStore.update(state => {
-      const notifications = [...state.notifications, { ...notification, id: Date.now() }];
-      return {
-        ...state,
-        notifications
-      };
-    });
-  },
-  
-  removeNotification: (id) => {
-    appStore.update(state => {
-      const notifications = state.notifications.filter(n => n.id !== id);
-      return {
-        ...state,
-        notifications
-      };
-    });
+  function handleEdit() {
+    dispatch('edit', { task });
   }
-};
+</script>
 ```
 
-## 6. 인증 및 라우트 보호
+#### 이벤트 처리
+- 컴포넌트 간 통신에는 이벤트 디스패치를 사용합니다.
+- 이벤트 핸들러 이름은 `handle`로 시작하는 일관된 명명 규칙을 사용합니다.
+- 데이터 변경은 부모 컴포넌트에 위임하고, 자식 컴포넌트는 변경 이벤트만 발생시킵니다.
 
-### 6.1 레이아웃 로직 (src/routes/+layout.ts)
+### 5.6 라우터 및 네비게이션 규칙
+
+#### 라우트 구조화
+- 인증 여부에 따라 라우트 그룹을 분리합니다(`(auth)`, `(protected)`).
+- 엔티티별로 중첩 라우트를 사용합니다(예: `/tasks/[id]`, `/images/[id]`).
+- RESTful 구조를 따르는 URL 패턴을 사용합니다.
+
+#### 인증 보호
+- 보호된 라우트에 접근 시 인증 상태를 확인하고 미인증 시 리다이렉션합니다.
+- 인증 상태 확인 로직은 레이아웃 로직(`+layout.ts`)에 중앙화합니다.
 
 ```typescript
-// src/routes/+layout.ts
-import { authAPI } from '$lib/api/auth';
-import { authStore, authActions } from '$lib/stores/auth';
-import { browser } from '$app/environment';
-import { redirect } from '@sveltejs/kit';
-import { getToken } from '$lib/utils/token';
-import type { LayoutLoad } from './$types';
-
 export const load: LayoutLoad = async ({ url }) => {
-  // 로그인 상태 확인
-  if (browser) {
-    const token = getToken();
-    if (token) {
-      try {
-        authActions.setLoading(true);
-        const userData = await authAPI.getCurrentUser();
-        authActions.setAuthenticated(userData, token);
-      } catch (error) {
-        console.error('Failed to get user data:', error);
-        authActions.setUnauthenticated();
-      } finally {
-        authActions.setLoading(false);
-      }
-    }
-  }
-  
   // 보호된 경로 접근 시 로그인 확인
-  const isProtectedRoute = url.pathname.startsWith('/dashboard') || 
-                           url.pathname.startsWith('/reports') || 
-                           url.pathname.startsWith('/settings');
+  const isProtectedRoute = url.pathname.startsWith('/tasks') || 
+                          url.pathname.startsWith('/images') || 
+                          url.pathname.startsWith('/receipts');
   
-  const isAuthRoute = url.pathname === '/login' || url.pathname === '/register';
-  
-  let isAuthenticated = false;
-  
-  // authStore의 현재 값 가져오기
-  const unsubscribe = authStore.subscribe(state => {
-    isAuthenticated = state.isAuthenticated;
-  });
-  unsubscribe();
-  
+  // 인증 상태 확인 및 리다이렉션 처리
   if (isProtectedRoute && !isAuthenticated) {
     throw redirect(307, '/login');
-  }
-  
-  if (isAuthRoute && isAuthenticated) {
-    throw redirect(307, '/dashboard');
   }
   
   return {};
 };
 ```
 
-## 7. 대시보드 페이지 구현
+### 5.7 오류 처리 규칙
 
-### 7.1 대시보드 페이지 (src/routes/(protected)/dashboard/+page.svelte)
-
-```svelte
-<script>
-  import { onMount } from 'svelte';
-  import { mainAPI } from '$lib/api/main';
-  import { authStore } from '$lib/stores/auth';
-  import { appActions } from '$lib/stores/app';
-  
-  // 사용자 정보 로드
-  let user;
-  authStore.subscribe(state => {
-    user = state.user;
-  });
-  
-  // 대시보드 데이터
-  let reports = [];
-  let stats = {};
-  let loading = true;
-  let error = null;
-  
-  onMount(async () => {
-    appActions.setCurrentPage('dashboard');
-    await loadDashboardData();
-  });
-  
-  async function loadDashboardData() {
-    loading = true;
-    error = null;
-    
-    try {
-      // 데이터 로드 (병렬 처리)
-      const [reportsData, statsData] = await Promise.all([
-        mainAPI.getReports({ limit: 5 }),
-        mainAPI.getUserData()
-      ]);
-      
-      reports = reportsData.items || [];
-      stats = statsData || {};
-    } catch (err) {
-      console.error('Failed to load dashboard data:', err);
-      error = '대시보드 데이터를 불러오는 중 오류가 발생했습니다.';
-    } finally {
-      loading = false;
-    }
-  }
-</script>
-
-<div class="dashboard-container">
-  {#if loading}
-    <div class="loading">데이터를 불러오는 중...</div>
-  {:else if error}
-    <div class="error">{error}</div>
-    <button on:click={loadDashboardData}>다시 시도</button>
-  {:else}
-    <header>
-      <h1>안녕하세요, {user?.name || '사용자'}님!</h1>
-      <p>오늘의 대시보드 요약입니다.</p>
-    </header>
-    
-    <div class="stats-grid">
-      <div class="stat-card">
-        <h3>총 보고서</h3>
-        <div class="stat-value">{stats.totalReports || 0}</div>
-      </div>
-      
-      <div class="stat-card">
-        <h3>완료된 보고서</h3>
-        <div class="stat-value">{stats.completedReports || 0}</div>
-      </div>
-      
-      <div class="stat-card">
-        <h3>진행 중 보고서</h3>
-        <div class="stat-value">{stats.inProgressReports || 0}</div>
-      </div>
-      
-      <div class="stat-card">
-        <h3>문제 보고서</h3>
-        <div class="stat-value">{stats.issueReports || 0}</div>
-      </div>
-    </div>
-    
-    <section class="recent-reports">
-      <div class="section-header">
-        <h2>최근 보고서</h2>
-        <a href="/reports" class="view-all">모두 보기</a>
-      </div>
-      
-      {#if reports.length === 0}
-        <div class="empty-state">최근 보고서가 없습니다.</div>
-      {:else}
-        <div class="reports-table">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>제목</th>
-                <th>상태</th>
-                <th>작성일</th>
-                <th>작업</th>
-              </tr>
-            </thead>
-            <tbody>
-              {#each reports as report}
-                <tr>
-                  <td>{report.id}</td>
-                  <td>{report.title}</td>
-                  <td>
-                    <span class="status status-{report.status.toLowerCase()}">
-                      {report.status}
-                    </span>
-                  </td>
-                  <td>{new Date(report.createdAt).toLocaleDateString()}</td>
-                  <td>
-                    <a href="/reports/{report.id}">상세보기</a>
-                  </td>
-                </tr>
-              {/each}
-            </tbody>
-          </table>
-        </div>
-      {/if}
-    </section>
-  {/if}
-</div>
-
-<style>
-  .dashboard-container {
-    padding: 1rem;
-  }
-  
-  .loading, .error {
-    padding: 2rem;
-    text-align: center;
-  }
-  
-  .error {
-    color: #e74c3c;
-  }
-  
-  header {
-    margin-bottom: 2rem;
-  }
-  
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-bottom: 2rem;
-  }
-  
-  .stat-card {
-    background-color: #f5f5f5;
-    border-radius: 8px;
-    padding: 1.5rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-  
-  .stat-value {
-    font-size: 2rem;
-    font-weight: bold;
-    margin-top: 0.5rem;
-  }
-  
-  .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-  }
-  
-  .view-all {
-    color: #4A90E2;
-    text-decoration: none;
-  }
-  
-  .reports-table {
-    overflow-x: auto;
-  }
-  
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  
-  th, td {
-    padding: 0.75rem;
-    text-align: left;
-    border-bottom: 1px solid #eee;
-  }
-  
-  .status {
-    display: inline-block;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.875rem;
-  }
-  
-  .status-completed {
-    background-color: #e6f7e6;
-    color: #2ecc71;
-  }
-  
-  .status-inprogress {
-    background-color: #e6f3ff;
-    color: #3498db;
-  }
-  
-  .status-issue {
-    background-color: #fff2e6;
-    color: #f39c12;
-  }
-  
-  .empty-state {
-    padding: 2rem;
-    text-align: center;
-    background-color: #f5f5f5;
-    border-radius: 8px;
-  }
-</style>
-```
-
-## 8. 재사용 가능한 컴포넌트
-
-### 8.1 메인 레이아웃 (src/routes/+layout.svelte)
-
-```svelte
-<script>
-  import { onMount } from 'svelte';
-  import { page } from '$app/stores';
-  import { authStore } from '$lib/stores/auth';
-  import { appStore } from '$lib/stores/app';
-  import Sidebar from '$lib/components/layout/Sidebar.svelte';
-  import Navbar from '$lib/components/layout/Navbar.svelte';
-  import NotificationsList from '$lib/components/ui/NotificationsList.svelte';
-  
-  let isAuthenticated = false;
-  let darkMode = false;
-  let sidebarOpen = true;
-  
-  // 구독
-  authStore.subscribe(state => {
-    isAuthenticated = state.isAuthenticated;
-  });
-  
-  appStore.subscribe(state => {
-    darkMode = state.isDarkMode;
-    sidebarOpen = state.sidebarOpen;
-  });
-  
-  onMount(() => {
-    // 다크모드 설정 복원
-    const savedDarkMode = localStorage.getItem('darkMode') === 'true';
-    if (savedDarkMode) {
-      appStore.update(state => ({ ...state, isDarkMode: true }));
-    }
-  });
-  
-  // URL 경로에 따라 사이드바 보이기/숨기기
-  $: showSidebar = isAuthenticated && !$page.url.pathname.includes('/login') && !$page.url.pathname.includes('/register');
-</script>
-
-<div class="app-container" class:dark-mode={darkMode}>
-  {#if showSidebar}
-    <Sidebar open={sidebarOpen} />
-  {/if}
-  
-  <div class="main-content" class:with-sidebar={showSidebar && sidebarOpen}>
-    {#if isAuthenticated}
-      <Navbar />
-    {/if}
-    
-    <main>
-      <slot />
-    </main>
-  </div>
-  
-  <NotificationsList />
-</div>
-
-<style>
-  :global(:root) {
-    --primary-color: #4A90E2;
-    --text-color: #333;
-    --bg-color: #fff;
-    --sidebar-width: 250px;
-  }
-  
-  :global(body) {
-    margin: 0;
-    padding: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  }
-  
-  .app-container {
-    min-height: 100vh;
-    background-color: var(--bg-color);
-    color: var(--text-color);
-  }
-  
-  .app-container.dark-mode {
-    --text-color: #f5f5f5;
-    --bg-color: #222;
-  }
-  
-  .main-content {
-    transition: margin-left 0.3s ease;
-  }
-  
-  .main-content.with-sidebar {
-    margin-left: var(--sidebar-width);
-  }
-  
-  main {
-    padding: 1rem;
-  }
-  
-  @media (max-width: 768px) {
-    .main-content.with-sidebar {
-      margin-left: 0;
-    }
-  }
-</style>
-```
-
-### 8.2 사이드바 컴포넌트 (src/lib/components/layout/Sidebar.svelte)
-
-```svelte
-<script>
-  import { appActions } from '$lib/stores/app';
-  import { authAPI } from '$lib/api/auth';
-  import { goto } from '$app/navigation';
-  
-  export let open = true;
-  
-  function toggleSidebar() {
-    appActions.toggleSidebar();
-  }
-  
-  function handleLogout() {
-    authAPI.logout();
-    goto('/login');
-  }
-</script>
-
-<aside class="sidebar" class:collapsed={!open}>
-  <div class="sidebar-header">
-    <h2 class="logo">FacReport</h2>
-    <button class="toggle-btn" on:click={toggleSidebar}>
-      {open ? '←' : '→'}
-    </button>
-  </div>
-  
-  <nav class="sidebar-nav">
-    <ul>
-      <li>
-        <a href="/dashboard" class:active={window.location.pathname === '/dashboard'}>
-          <span class="icon">📊</span>
-          <span class="text">대시보드</span>
-        </a>
-      </li>
-      <li>
-        <a href="/reports" class:active={window.location.pathname.startsWith('/reports')}>
-          <span class="icon">📝</span>
-          <span class="text">보고서</span>
-        </a>
-      </li>
-      <li>
-        <a href="/analytics" class:active={window.location.pathname.startsWith('/analytics')}>
-          <span class="icon">📈</span>
-          <span class="text">분석</span>
-        </a>
-      </li>
-      <li>
-        <a href="/settings" class:active={window.location.pathname.startsWith('/settings')}>
-          <span class="icon">⚙️</span>
-          <span class="text">설정</span>
-        </a>
-      </li>
-    </ul>
-  </nav>
-  
-  <div class="sidebar-footer">
-    <button class="logout-btn" on:click={handleLogout}>
-      <span class="icon">🚪</span>
-      <span class="text">로그아웃</span>
-    </button>
-  </div>
-</aside>
-
-<style>
-  .sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100vh;
-    width: var(--sidebar-width);
-    background-color: #2c3e50;
-    color: white;
-    transition: all 0.3s ease;
-    display: flex;
-    flex-direction: column;
-    z-index: 1000;
-  }
-  
-  .sidebar.collapsed {
-    width: 60px;
-  }
-  
-  .sidebar-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  }
-  
-  .logo {
-    margin: 0;
-    font-size: 1.25rem;
-    white-space: nowrap;
-    overflow: hidden;
-  }
-  
-  .toggle-btn {
-    background: none;
-    border: none;
-    color: white;
-    cursor: pointer;
-    font-size: 1.25rem;
-  }
-  
-  .sidebar-nav {
-    flex: 1;
-    overflow-y: auto;
-    padding: 1rem 0;
-  }
-  
-  .sidebar-nav ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-  
-  .sidebar-nav a {
-    display: flex;
-    align-items: center;
-    padding: 0.75rem 1rem;
-    color: white;
-    text-decoration: none;
-    transition: background-color 0.2s;
-  }
-  
-  .sidebar-nav a:hover, .sidebar-nav a.active {
-    background-color: rgba(255, 255, 255, 0.1);
-  }
-  
-  .icon {
-    margin-right: 1rem;
-    width: 20px;
-    text-align: center;
-  }
-  
-  .sidebar.collapsed .text {
-    display: none;
-  }
-  
-  .sidebar-footer {
-    padding: 1rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-  }
-  
-  .logout-btn {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    background: none;
-    border: none;
-    color: white;
-    cursor: pointer;
-    padding: 0.5rem;
-  }
-  
-  .logout-btn:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
-  }
-  
-  @media (max-width: 768px) {
-    .sidebar {
-      transform: translateX(-100%);
-    }
-    
-    .sidebar.open {
-      transform: translateX(0);
-    }
-  }
-</style>
-```
-
-## 9. API 오류 처리
-
-### 9.1 공통 오류 처리 유틸리티 (src/lib/utils/error-handler.ts)
+- 모든 API 호출은 try-catch로 감싸서 오류를 처리합니다.
+- 오류 메시지를 사용자 친화적으로 변환하는 중앙 처리 메커니즘을 구현합니다.
+- HTTP 상태 코드별로 적절한 오류 처리 전략을 구현합니다.
+- 오류 발생 시 사용자에게 명확한 피드백을 제공합니다.
 
 ```typescript
-import { appActions } from '$lib/stores/app';
-
-/**
- * API 오류를 처리하는 공통 함수
- * @param {Error} error - 발생한 오류
- * @param {Object} options - 추가 옵션
- * @returns {string} 사용자에게 표시할 오류 메시지
- */
 export function handleApiError(error, options = {}) {
   const { showNotification = true, defaultMessage = '요청 처리 중 오류가 발생했습니다.' } = options;
   
@@ -1051,262 +287,354 @@ export function handleApiError(error, options = {}) {
     
     // 오류 코드별 처리
     switch (status) {
-      case 400:
-        const message = data.message || '잘못된 요청입니다.';
-        if (showNotification) {
-          appActions.addNotification({ 
-            type: 'error', 
-            message 
-          });
-        }
-        return message;
-        
-      case 401:
-        // 인증 오류는 인터셉터에서 처리하므로 여기서는 메시지만 반환
-        return '인증이 필요합니다. 다시 로그인해주세요.';
-        
-      case 403:
-        const forbiddenMsg = '이 작업을 수행할 권한이 없습니다.';
-        if (showNotification) {
-          appActions.addNotification({ 
-            type: 'error', 
-            message: forbiddenMsg 
-          });
-        }
-        return forbiddenMsg;
-        
-      case 404:
-        return '요청한 리소스를 찾을 수 없습니다.';
-        
-      case 422:
-        // 유효성 검사 오류
-        let validationMsg = '입력 정보가 유효하지 않습니다:';
-        
-        if (data.errors && Array.isArray(data.errors)) {
-          validationMsg += ' ' + data.errors.map(err => err.message).join(', ');
-        } else if (data.message) {
-          validationMsg = data.message;
-        }
-        
-        if (showNotification) {
-          appActions.addNotification({ 
-            type: 'error', 
-            message: validationMsg 
-          });
-        }
-        return validationMsg;
-        
-      case 500:
-      case 502:
-      case 503:
-      case 504:
-        const serverErrorMsg = '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
-        if (showNotification) {
-          appActions.addNotification({ 
-            type: 'error', 
-            message: serverErrorMsg 
-          });
-        }
-        return serverErrorMsg;
-        
-      default:
-        const defaultErrorMsg = data.message || defaultMessage;
-        if (showNotification) {
-          appActions.addNotification({ 
-            type: 'error', 
-            message: defaultErrorMsg 
-          });
-        }
-        return defaultErrorMsg;
+      case 400: return '잘못된 요청입니다.';
+      case 401: return '인증이 필요합니다. 다시 로그인해주세요.';
+      case 403: return '이 작업을 수행할 권한이 없습니다.';
+      case 404: return '요청한 리소스를 찾을 수 없습니다.';
+      // ... 기타 상태 코드 처리
     }
   }
   
   // 네트워크 오류
   if (error.request && !error.response) {
-    const networkErrorMsg = '네트워크 연결을 확인해주세요.';
-    if (showNotification) {
-      appActions.addNotification({ 
-        type: 'error', 
-        message: networkErrorMsg 
-      });
-    }
-    return networkErrorMsg;
+    return '네트워크 연결을 확인해주세요.';
   }
   
   // 기타 오류
-  console.error('Unexpected error:', error);
-  if (showNotification) {
-    appActions.addNotification({ 
-      type: 'error', 
-      message: defaultMessage 
-    });
-  }
   return defaultMessage;
 }
 ```
 
-## 10. 배포 구성
+### 5.8 이미지 및 파일 처리 규칙
 
-### 10.1 SvelteKit 어댑터 구성 (svelte.config.ts)
+#### 이미지 업로드
+- FormData를 사용하여 이미지 파일을 전송합니다.
+- 업로드 진행 상태를 사용자에게 표시합니다.
+- 이미지 유효성 검사(파일 크기, 형식 등)를 클라이언트 측에서 수행합니다.
 
-```typescript
-import adapter from '@sveltejs/adapter-node';
-import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+#### 이미지 표시
+- 이미지 로딩 상태를 처리합니다(로딩 중, 오류 시 대체 이미지 등).
+- 고해상도 이미지의 경우 썸네일 또는 최적화된 버전을 사용합니다.
+- 반응형 이미지 처리를 위해 적절한 CSS를 적용합니다.
 
-/** @type {import('@sveltejs/kit').Config} */
-const config = {
-  preprocess: vitePreprocess(),
-  
-  kit: {
-    adapter: adapter({
-      // 노드 서버로 배포하기 위한 설정
-      out: 'build',
-      precompress: true,
-      envPrefix: 'PUBLIC_'
-    }),
-    csrf: {
-      checkOrigin: true,
-    }
-  }
-};
+#### OCR 영역 표시
+- Canvas API를 사용하여 이미지 위에 영역을 표시합니다.
+- 이미지 스케일에 따라 영역 좌표를 적절히 변환합니다.
+- 상호작용을 위한 이벤트 핸들러를 구현합니다.
 
-export default config;
+### 5.9 상태와 UI 동기화 규칙
+
+- 로딩 상태, 오류 상태, 성공 상태를 명확히 구분하여 UI에 반영합니다.
+- 반응형 UI를 위해 스토어 상태 변화에 따라 UI를 자동으로 업데이트합니다.
+- 사용자 상호작용 후 피드백을 즉시 제공합니다.
+
+```svelte
+{#if loading}
+  <LoadingSpinner />
+{:else if error}
+  <ErrorMessage message={error} />
+{:else if data.length === 0}
+  <EmptyState message="데이터가 없습니다." />
+{:else}
+  <!-- 데이터 표시 UI -->
+{/if}
 ```
 
-### 10.2 배포 스크립트 (package.json)
+### 5.10 성능 최적화 규칙
 
-```json
-{
-  "name": "facreport-frontend",
-  "version": "1.0.0",
-  "private": true,
-  "scripts": {
-    "dev": "vite dev",
-    "build": "vite build",
-    "preview": "vite preview",
-    "lint": "eslint .",
-    "start": "node build/index.js",
-    "docker:build": "docker build -t facreport-frontend .",
-    "docker:run": "docker run -p 3000:3000 -e PUBLIC_MAIN_API_URL=http://facreport.iptime.org:8006 -e PUBLIC_AUTH_API_URL=http://facreport.iptime.org:5009 facreport-frontend"
-  },
-  "devDependencies": {
-    "@sveltejs/adapter-node": "^1.0.0",
-    "@sveltejs/kit": "^1.0.0",
-    "autoprefixer": "^10.4.14",
-    "eslint": "^8.28.0",
-    "eslint-plugin-svelte": "^2.30.0",
-    "postcss": "^8.4.27",
-    "svelte": "^4.0.5",
-    "tailwindcss": "^3.3.3",
-    "vite": "^4.4.2"
-  },
-  "dependencies": {
-    "axios": "^1.4.0"
-  },
-  "type": "module",
-  "engines": {
-    "node": ">=18.0.0"
-  }
-}
+- 리스트 렌더링 시 `{#each}` 블록에 키를 제공하여 DOM 업데이트를 최적화합니다.
+- 큰 이미지의 경우 지연 로딩(lazy loading)을 구현합니다.
+- 컴포넌트 라이프사이클 함수(`onMount`, `onDestroy` 등)를 적절히 사용하여 리소스를 관리합니다.
+- 불필요한 렌더링을 방지하기 위해 메모이제이션 기법을 활용합니다.
+
+## 6. 기능별 구현 가이드
+
+### 6.1 인증 기능
+
+#### 인증 상태 관리
+- 토큰은 localStorage에 안전하게 저장합니다.
+- 인증 상태는 중앙 스토어에서 관리하고 전역에서 접근할 수 있게 합니다.
+- 토큰 만료 시 자동 갱신 메커니즘을 구현합니다.
+
+#### 로그인/로그아웃 처리
+- 로그인 성공 시 토큰을 저장하고 인증 상태를 업데이트합니다.
+- 로그아웃 시 토큰을 제거하고 인증 상태를 초기화합니다.
+- 보호된 경로에 미인증 접근 시 로그인 페이지로 리다이렉션합니다.
+
+### 6.2 태스크 관리 기능
+
+#### 태스크 목록 및 필터링
+- 페이지네이션, 정렬, 필터링 기능을 구현합니다.
+- 검색 기능으로 태스크를 쉽게 찾을 수 있게 합니다.
+- 상태별 태스크 구분(활성, 숨김, 비활성)을 시각적으로 표현합니다.
+
+#### 태스크 CRUD 작업
+- 태스크 생성, 조회, 수정, 삭제 기능을 구현합니다.
+- 태스크에 마감일 설정 및 알림 기능을 추가합니다.
+- 태스크와 연결된 이미지 목록을 효과적으로 표시합니다.
+
+### 6.3 이미지 관리 기능
+
+#### 이미지 업로드 및 표시
+- 드래그 앤 드롭 기능을 포함한 이미지 업로드 컴포넌트를 구현합니다.
+- 이미지 썸네일 그리드 레이아웃으로 효율적인 탐색 경험을 제공합니다.
+- 이미지 메타데이터(파일 크기, 날짜 등)를 표시합니다.
+
+#### 이미지 처리
+- 이미지 편집 기능(회전, 자르기 등)을 구현합니다.
+- 이미지별 영수증 OCR 영역을 시각적으로 표시합니다.
+- 이미지와 태스크 간의 연결 관계를 관리합니다.
+
+### 6.4 영수증 관리 기능
+
+#### 영수증 데이터 표시
+- 영수증 OCR 데이터를 구조화된 형태로 표시합니다.
+- 영수증 영역을 이미지 위에 하이라이트하여 시각적으로 구분합니다.
+- 영수증 메타데이터(상점명, 날짜, 금액 등)를 효과적으로 표시합니다.
+
+#### 영수증 편집 및 검증
+- 영수증 데이터 수동 편집 기능을 구현합니다.
+- 영수증 데이터의 유효성 검사(금액 계산 등)를 구현합니다.
+- 영수증 처리 상태를 관리합니다(인식 중, 검증 필요, 검증 완료 등).
+
+## 7. 개발 일정 및 작업 계획
+
+
+
+### 세부 작업 일정
+
+#### 1일차: 프로젝트 설정 및 기본 구조
+- SvelteKit 프로젝트 생성
+- 의존성 설치(axios, date-fns, uuid 등)
+- TypeScript 설정
+- 프로젝트 구조 설정
+- 환경 변수 설정(.env)
+
+#### 2일차: API 클라이언트 및 타입 구현
+- 인증, 태스크, 이미지, 영수증 관련 타입 정의
+- API 클라이언트 모듈 구현
+- 인터셉터 및 오류 처리 유틸리티 구현
+- 스토어 구조 설계 및 기본 구현
+
+#### 3일차: 인증 및 레이아웃 구현
+- 인증 페이지(로그인, 회원가입) 구현
+- 레이아웃 컴포넌트(사이드바, 네비게이션) 구현
+- 라우트 보호 로직 구현
+- 기본 UI 컴포넌트 라이브러리 구현
+
+#### 4일차: 태스크 관리 기능 구현
+- 태스크 목록, 상세, 생성, 편집 페이지 구현
+- 태스크 필터링 및 정렬 기능 구현
+- 태스크 상태 관리 구현
+- 태스크-이미지 연결 관계 구현
+
+#### 5일차: 이미지 관리 기능 구현
+- 이미지 업로드 컴포넌트 구현
+- 이미지 갤러리 및 상세 보기 구현
+- 이미지 메타데이터 표시 기능 구현
+- 이미지 처리 상태 관리 구현
+
+#### 6일차: 영수증 관리 기능 구현
+- 영수증 OCR 영역 표시 컴포넌트 구현
+- 영수증 데이터 표시 및 편집 기능 구현
+- 영수증 유효성 검사 기능 구현
+- 영수증 처리 워크플로우 구현
+
+#### 7일차: 마무리 및 배포 준비
+- 대시보드 페이지 구현(통계, 요약 정보)
+- 종합 테스트 및 버그 수정
+- 성능 최적화 작업
+- 배포 설정 및 문서화
+
+## 8. 품질 관리 및 개발 방법론
+
+### 8.1 코드 품질 관리
+
+- **ESLint 및 Prettier**: 일관된 코드 스타일과 품질을 유지합니다.
+- **TypeScript 엄격 모드**: 타입 안전성을 높여 런타임 오류를 줄입니다.
+- **코드 리뷰**: 개발 과정에서 정기적인 코드 리뷰를 통해 품질을 관리합니다.
+
+### 8.2 테스트 전략
+
+- **컴포넌트 테스트**: 핵심 UI 컴포넌트에 대한 단위 테스트를 구현합니다.
+- **통합 테스트**: API 통신 및 주요 사용자 흐름에 대한 통합 테스트를 구현합니다.
+- **수동 테스트**: 다양한 디바이스와 브라우저에서 UI 동작을 검증합니다.
+
+## 8.3 배포 전략
+
+- **CI/CD 파이프라인**: 자동화된 빌드, 테스트, 배포 프로세스를 구축합니다.
+- **환경별 설정**: 개발, 테스트, 프로덕션 환경에 맞는 설정을 분리 관리합니다.
+- **점진적 배포**: 주요 기능은 카나리 배포 전략으로 위험을 최소화합니다.
+- **롤백 계획**: 배포 후 문제 발생 시 신속하게 롤백할 수 있는 전략을 수립합니다.
+
+### 8.4 애자일 개발 방법론
+
+- **스프린트 계획**: 1일 단위로 명확한 목표와 완료 기준을 설정합니다.
+- **일일 스탠드업**: 진행 상황을 공유하고 장애물을 신속히 해결합니다.
+- **회고**: 각 스프린트 마지막에 개선점을 도출하고 다음 스프린트에 반영합니다.
+- **지속적 개선**: 사용자 피드백을 빠르게 수집하여 제품에 반영합니다.
+
+
+## 9. 설계 원칙 및 아키텍처 패턴
+
+### 9.1 컴포넌트 계층 아키텍처
+
+```mermaid
+flowchart TD
+    subgraph "컴포넌트 계층"
+        Pages["페이지 컴포넌트 (Routes)"] --> Features["특성 컴포넌트 (Features)"]
+        Features --> UI["UI 컴포넌트 (UI)"]
+    end
+    
+    subgraph "상태 계층"
+        Pages --> Stores["스토어 (Store)"]
+        Features --> Stores
+    end
+    
+    subgraph "데이터 계층"
+        Stores --> API["API 클라이언트"]
+        API --> Backend["백엔드 서비스"]
+    end
+    
+    subgraph "유틸리티 계층"
+        UI -.-> Utils["유틸리티 함수"]
+        Features -.-> Utils
+        Stores -.-> Utils
+        API -.-> Utils
+    end
 ```
 
-### 10.3 Docker 배포 (Dockerfile)
 
-```dockerfile
-# 빌드 스테이지
-FROM node:18-alpine as build
+### 9.2 주요 설계 원칙
 
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
+#### 관심사 분리 (Separation of Concerns)
+- **프레젠테이션 로직**: UI 컴포넌트에서 처리
+- **비즈니스 로직**: 스토어와 유틸리티 함수에서 처리
+- **데이터 접근 로직**: API 클라이언트에서 처리
 
-COPY . .
-RUN npm run build
+#### 단방향 데이터 흐름
+- 상태는 스토어에서 관리되며 컴포넌트로 전파됩니다.
+- 컴포넌트는 스토어 액션을 통해서만 상태를 변경할 수 있습니다.
+- 이벤트는 아래에서 위로, 데이터는 위에서 아래로 흐릅니다.
 
-# 프로덕션 스테이지
-FROM node:18-alpine
+#### 재사용성과 합성
+- 작고 단일 목적의 컴포넌트를 만들고 이를 조합하여 복잡한 UI를 구성합니다.
+- 특수 목적 컴포넌트보다 일반적이고 유연한 컴포넌트를 선호합니다.
+- 고차 컴포넌트 패턴을 사용하여 기능을 재사용합니다.
 
-WORKDIR /app
-COPY --from=build /app/build build/
-COPY --from=build /app/package.json .
-COPY --from=build /app/node_modules node_modules/
+### 9.3 반응형 디자인 원칙
 
-ENV NODE_ENV=production
-ENV PORT=3000
+- **모바일 우선 설계**: 모바일 화면부터 설계를 시작하고 점진적으로 확장합니다.
+- **유동적 그리드 시스템**: 고정 너비가 아닌 상대적 크기로 레이아웃을 구성합니다.
+- **미디어 쿼리 브레이크포인트**: 표준화된 브레이크포인트를 사용하여 다양한 화면 크기를 지원합니다.
+- **접근성 고려**: WCAG 지침을 준수하여 모든 사용자가 접근 가능한 UI를 구현합니다.
 
-EXPOSE 3000
-CMD ["node", "build/index.js"]
-```
+## 10. 주요 UI/UX 가이드라인
 
-## 11. 결론 및 추가 고려사항
+### 10.1 시각적 디자인 일관성
 
-이 작업지시서는 Svelte 프레임워크를 사용하여 두 개의 API 서버(Main API, Auth API)와 통신하는 프론트엔드 애플리케이션의 구현 방법을 상세히 설명했습니다. 구현 시 다음 사항을 고려하세요:
+#### 색상 체계
+- **기본 색상**: #4A90E2 (파란색)
+- **보조 색상**: #F5F5F5 (회색), #2C3E50 (짙은 회색)
+- **액센트 색상**: #2ECC71 (녹색), #E74C3C (빨간색), #F39C12 (주황색)
+- **상태 색상**:
+  * 성공: #2ECC71
+  * 경고: #F39C12
+  * 오류: #E74C3C
+  * 정보: #4A90E2
 
-1. **모듈식 구조**: 코드는 기능별로 분리되어 유지보수가 용이합니다.
-2. **인증 처리**: 토큰 기반 인증을 통해 보안을 강화했습니다.
-3. **상태 관리**: Svelte의 내장 스토어를 활용하여 효율적인 상태 관리를 구현했습니다.
-4. **오류 처리**: 일관된 오류 처리 메커니즘을 통해 사용자 경험을 향상했습니다.
-5. **반응형 디자인**: 모바일 기기를 포함한 다양한 디바이스에서 원활하게 작동합니다.
-6. **TypeScript 지원**: 타입 안전성을 통해 개발 경험과 코드 품질을 향상시켰습니다.
-7. **모듈 구조화**: 순환 참조 문제를 해결하기 위한 모듈 구조화로 코드의 안정성을 높였습니다.
+#### 타이포그래피
+- **기본 글꼴**: Segoe UI, Tahoma, Geneva, Verdana, sans-serif
+- **제목 크기**: H1(24px), H2(20px), H3(18px), H4(16px)
+- **본문 텍스트**: 14px
+- **작은 텍스트**: 12px
 
-### 추가 개선 가능 사항:
+#### 공간 및 여백
+- 일관된 간격 시스템 사용: 4px, 8px, 16px, 24px, 32px, 48px, 64px
+- 중요한 요소는 충분한 여백으로 강조
+- 관련 요소는 그룹화하여 시각적 계층 구조 형성
 
-1. **테스트 추가**: 단위 테스트, 통합 테스트 및 E2E 테스트를 구현하여 코드 품질 향상
-2. **국제화(i18n)**: 다국어 지원을 위한 프레임워크 추가
-3. **접근성(a11y)**: 웹 접근성 표준을 준수하도록 개선
-4. **성능 최적화**: 코드 분할, 이미지 최적화 등을 통한 성능 향상
-5. **모니터링 도구**: 프론트엔드 오류 및 성능 모니터링을 위한 도구 통합
+### 10.2 상호작용 패턴
 
-## 12. 개발 일정 및 작업 계획
+#### 입력 요소
+- 모든 입력 필드에 명확한 라벨 제공
+- 실시간 유효성 검사와 피드백 표시
+- 오류 메시지는 구체적이고 해결 방법 제시
+- 필수 입력 필드는 시각적으로 표시 (예: 별표)
 
-### 1일차: 프로젝트 설정 및 기본 구조 구축
+#### 버튼 및 액션
+- 주요 액션은 강조 버튼으로 표시
+- 보조 액션은 텍스트 링크 또는 아웃라인 버튼으로 표시
+- 파괴적 액션(삭제 등)은 확인 단계 추가
+- 액션 버튼의 상태 표시 (활성, 비활성, 호버, 로딩 등)
 
-- [ ] SvelteKit 프로젝트 생성
-- [ ] 의존성 설치 (axios, tailwindcss 등)
-- [ ] TypeScript 설치 및 설정
-  ```bash
-  npm install -D typescript @tsconfig/svelte
-  ```
-- [ ] `tsconfig.json` 생성
-  ```bash
-  npx svelte-add typescript
-  ```
-- [ ] Vite 설정 파일 생성 (`vite.config.ts`)
-- [ ] 타입 정의 파일 구성
-  ```bash
-  mkdir -p src/lib/types
-  ```
-- [ ] 프로젝트 구조 설정
-- [ ] 환경 변수 설정 (.env 파일)
+#### 피드백 및 상태 표시
+- 작업 진행 상태를 명확히 표시 (로딩 스피너, 진행 표시줄 등)
+- 액션 성공/실패 시 토스트 메시지 또는 알림 표시
+- 빈 상태(empty state)에 대한 친절한 안내 제공
+- 사용자 행동에 대한 즉각적인 시각적 피드백 제공
 
-### 2일차: 인증 모듈 및 API 클라이언트 구현
+### 10.3 페이지 레이아웃 패턴
 
-- [ ] 인증 타입 정의 (`src/lib/types/auth.types.ts`)
-- [ ] 토큰 관리 유틸리티 분리 (`src/lib/utils/token.ts`)
-- [ ] API 인터셉터 모듈 분리 (`src/lib/api/interceptors.ts`)
-- [ ] Auth API 클라이언트 구현
-- [ ] Main API 클라이언트 구현
-- [ ] 인증 스토어 구현
-- [ ] 애플리케이션 스토어 구현
+#### 대시보드 레이아웃
+- 주요 지표는 상단에 카드 형태로 표시
+- 최근 활동 및 요약 정보를 중간에 배치
+- 관련 항목(태스크, 이미지) 연결에 빠르게 접근 가능한 링크 제공
 
-### 3일차: 인증 페이지 및 라우트 보호 구현
+#### 목록 페이지 레이아웃
+- 필터, 정렬, 검색 옵션을 상단에 배치
+- 페이지네이션 또는 무한 스크롤 구현
+- 항목별 주요 액션(보기, 편집, 삭제)에 쉽게 접근 가능하도록 설계
 
-- [ ] 레이아웃 로직 구현 (인증 체크)
-- [ ] 로그인 페이지 구현
-- [ ] 회원가입 페이지 구현
-- [ ] 소셜 로그인 연동
+#### 상세 페이지 레이아웃
+- 주요 정보를 상단에 표시
+- 관련 데이터를 논리적 섹션으로 그룹화
+- 주요 액션 버튼은 항상 접근 가능하도록 배치 (고정 위치 또는 상단에 배치)
 
-### 4일차: 대시보드 및 기본 UI 컴포넌트 구현
+## 11. 성능 최적화 및 사용자 경험 향상
 
-- [ ] 메인 레이아웃 구현
-- [ ] 사이드바 컴포넌트 구현
-- [ ] 네비게이션 바 구현
-- [ ] 대시보드 페이지 구현
+### 11.1 성능 최적화 전략
 
-### 5일차: 오류 처리 및 마무리
+#### 로딩 최적화
+- 코드 분할(Code Splitting)을 통한 초기 로딩 시간 단축
+- 핵심 리소스의 사전 로딩(Preloading)
+- 라우트 기반 지연 로딩 구현
 
-- [ ] 공통 오류 처리 유틸리티 구현
-- [ ] 알림 컴포넌트 구현
-- [ ] 배포 설정 (SvelteKit 어댑터, Docker)
-- [ ] 최종 테스트 및 버그 수정
+#### 렌더링 최적화
+- 불필요한 리렌더링 방지
+- `{#each}` 블록에 키를 사용하여 DOM 업데이트 최적화
+- 고비용 계산 결과 메모이제이션
+
+#### 네트워크 최적화
+- API 응답 캐싱
+- 데이터 요청 배치 처리
+- 필요한 데이터만 선택적으로 요청 (필드 필터링)
+
+### 11.2 사용자 경험 향상 기법
+
+#### 인지된 성능 향상
+- 스켈레톤 로더 사용
+- 낙관적 UI 업데이트 구현
+- 백그라운드 데이터 프리페칭
+
+#### 점진적 향상
+- 기본 기능 우선 로드 후 부가 기능 점진적 활성화
+- 오프라인 지원 및 상태 복원
+- 불안정한 네트워크 환경에서도 작동하는 복원력 있는 UI
+
+#### 접근성 및 포용성
+- 키보드 네비게이션 지원
+- 스크린 리더 호환성 보장
+- 고대비 모드 및 다양한 글꼴 크기 지원
+
+## 12. 결론 및 추가 고려사항
+
+이 작업지시서는 Svelte 프레임워크를 사용하여 태스크, 이미지, 영수증 관리 시스템의 프론트엔드 구현에 필요한 구체적인 지침을 제공했습니다. 모듈화된 구조, 일관된 개발 규칙, 명확한 책임 분리를 통해 유지보수가 용이한 코드베이스를 구축할 수 있습니다.
+
+### 확장 고려사항
+
+1. **다국어 지원**: 국제화(i18n) 라이브러리 통합 고려
+2. **테마 지원**: 다크 모드 외에 추가 테마 옵션 제공
+3. **사용자 설정**: 개인화된 대시보드 및 UI 설정 기능
+4. **고급 영수증 분석**: 차트 및 그래프로 영수증 데이터 시각화
+5. **협업 기능**: 다중 사용자 협업 및 공유 기능 추가

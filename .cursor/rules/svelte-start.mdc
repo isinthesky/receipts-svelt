@@ -7,6 +7,7 @@ alwaysApply: false
 # Your rule content
 
 [guide-intro.md](mdc:docs/guide-intro.md)
+
 # Svelte 프론트엔드 구현 수정 작업 계획
 
 스마트 문서 기반 영수증 처리 시스템을 위한 Svelte 프론트엔드 구현 계획을 수정했습니다. 보고서와 분석 관련 엔드포인트를 제거하고 Task, Image, Receipt 모델을 효과적으로 다루는 UI 구성으로 변경했습니다.
