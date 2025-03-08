@@ -2,9 +2,10 @@
   import { authStore, isAuthenticated } from '$lib/stores/auth';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
+  import axios from 'axios';
 
   // 폼 상태
-  let email = '';
+  let username = '';
   let password = '';
   let rememberMe = false;
   let isSubmitting = false;
@@ -12,6 +13,8 @@
 
   // 이미 로그인되어 있으면 대시보드로 리다이렉트
   onMount(() => {
+    console.log('onMount');
+    
     const unsubscribe = isAuthenticated.subscribe(value => {
       if (value) {
         goto('/dashboard');
@@ -23,9 +26,11 @@
 
   // 로그인 처리
   async function handleSubmit() {
+    console.log('handleSubmit 시작:', username, password);
+
     // 폼 유효성 검사
-    if (!email) {
-      formError = '이메일을 입력해주세요.';
+    if (!username) {
+      formError = '아이디를 입력해주세요.';
       return;
     }
 
@@ -38,17 +43,24 @@
     isSubmitting = true;
 
     try {
-      const success = await authStore.login(email, password);
+      console.log('authStore.login 호출 직전:', username, password);
+      const success = await authStore.login(username, password);
+      console.log('로그인 결과:', success);
       
       if (success) {
-        goto('/dashboard');
+        // 약간의 지연 후 대시보드로 이동 (상태 업데이트 시간 확보)
+        setTimeout(() => {
+          goto('/dashboard');
+        }, 100);
       } else {
         // 스토어에서 오류 메시지 가져오기
-        authStore.subscribe(state => {
+        const unsubscribe = authStore.subscribe(state => {
           formError = state.error || '로그인에 실패했습니다.';
-        })();
+        });
+        unsubscribe();
       }
     } catch (error) {
+      console.error('로그인 처리 중 오류:', error);
       formError = error instanceof Error ? error.message : '로그인 중 오류가 발생했습니다.';
     } finally {
       isSubmitting = false;
@@ -73,16 +85,16 @@
     <form class="mt-8 space-y-6" on:submit|preventDefault={handleSubmit}>
       <div class="rounded-md shadow-sm -space-y-px">
         <div>
-          <label for="email-address" class="sr-only">이메일</label>
+          <label for="username" class="sr-only">아이디</label>
           <input
-            id="email-address"
-            name="email"
-            type="email"
-            autocomplete="email"
+            id="username"
+            name="username"
+            type="text"
+            autocomplete="username"
             required
-            bind:value={email}
+            bind:value={username}
             class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-            placeholder="이메일"
+            placeholder="아이디"
           />
         </div>
         <div>
@@ -115,7 +127,7 @@
         </div>
 
         <div class="text-sm">
-          <a href="#" class="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400">
+          <a href="/forgot-password" class="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400">
             비밀번호를 잊으셨나요?
           </a>
         </div>
