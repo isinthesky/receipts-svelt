@@ -1,6 +1,5 @@
 import type { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
-import { goto } from '$app/navigation';
-import { browser } from '$app/environment';
+import type { ResponseBase } from './auth';
 
 // 확장된 요청 설정 타입
 interface ExtendedAxiosRequestConfig extends InternalAxiosRequestConfig {
@@ -15,20 +14,17 @@ interface ExtendedAxiosRequestConfig extends InternalAxiosRequestConfig {
 export const setupInterceptors = (
   axiosInstance: AxiosInstance,
   options: {
-    onUnauthorized?: () => void;
-    getToken?: () => string | null;
-    refreshToken?: () => Promise<string | null>;
-  } = {}
+    getToken: () => string | null;
+    refreshToken: () => Promise<string | null>;
+    onUnauthorized: () => void;
+  }
 ) => {
   // 요청 인터셉터
   axiosInstance.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
-      // 토큰이 있으면 헤더에 추가
-      if (options.getToken) {
-        const token = options.getToken();
-        if (token) {
-          config.headers.set('Authorization', `Bearer ${token}`);
-        }
+      const token = options.getToken();
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
       }
       return config;
     },
@@ -40,58 +36,85 @@ export const setupInterceptors = (
   // 응답 인터셉터
   axiosInstance.interceptors.response.use(
     (response: AxiosResponse) => {
+      // 응답 데이터가 없는 경우 기본 응답 형식으로 변환
+      if (!response.data) {
+        response.data = {
+          success: true,
+          message: '성공적으로 처리되었습니다.',
+          timestamp: new Date().toISOString()
+        } as ResponseBase;
+      }
+      
+      // 응답 데이터가 있지만 새로운 형식이 아닌 경우 변환
+      if (response.data && typeof response.data === 'object' && !('success' in response.data)) {
+        const originalData = response.data;
+        response.data = {
+          success: true,
+          message: '성공적으로 처리되었습니다.',
+          timestamp: new Date().toISOString(),
+          data: originalData
+        };
+      }
+      
       return response;
     },
     async (error: AxiosError) => {
-      // 원본 요청 설정
       const originalRequest = error.config as ExtendedAxiosRequestConfig;
       
-      // 리프레시 토큰 요청 자체에 대한 오류는 바로 반환
-      if (originalRequest.url?.includes('refresh') && error.response?.status === 401) {
-        // 리프레시 토큰 요청 실패 시 인증 실패 처리
-        if (options.onUnauthorized) {
+      // 401 오류이고 재시도하지 않은 요청인 경우
+      if (error.response?.status === 401 && !originalRequest._retry) {
+        originalRequest._retry = true;
+        
+        try {
+          // 토큰 갱신 시도
+          const newToken = await options.refreshToken();
+          
+          if (newToken) {
+            // 새 토큰으로 요청 헤더 업데이트
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            // 원래 요청 재시도
+            return axiosInstance(originalRequest);
+          } else {
+            // 토큰 갱신 실패 시 인증 실패 처리
+            options.onUnauthorized();
+            return Promise.reject(error);
+          }
+        } catch (refreshError) {
+          // 토큰 갱신 중 오류 발생 시 인증 실패 처리
           options.onUnauthorized();
+          return Promise.reject(refreshError);
         }
-        return Promise.reject(error);
       }
       
-      // 401 Unauthorized 오류 처리
-      if (error.response?.status === 401 && !originalRequest._retry) {
-        // 토큰 갱신 시도
-        if (options.refreshToken) {
-          try {
-            // 재시도 플래그 설정
-            originalRequest._retry = true;
+      // 오류 응답 형식화
+      if (error.response?.data) {
+        // 이미 형식화된 오류 응답인 경우 그대로 반환
+        if (typeof error.response.data === 'object' && 'success' in error.response.data) {
+          return Promise.reject(error);
+        }
+        
+        // 오류 응답 형식화
+        const errorMessage = 
+          typeof error.response.data === 'object' && 'message' in error.response.data
+            ? error.response.data.message
+            : '요청 처리 중 오류가 발생했습니다.';
             
-            const newToken = await options.refreshToken();
-            if (newToken) {
-              // 새 토큰으로 요청 재시도
-              originalRequest.headers.set('Authorization', `Bearer ${newToken}`);
-              return axiosInstance(originalRequest);
-            } else {
-              // 토큰 갱신 실패 시 인증 실패 처리
-              if (options.onUnauthorized) {
-                options.onUnauthorized();
-              }
-            }
-          } catch (refreshError) {
-            console.error('토큰 갱신 실패:', refreshError);
-            // 토큰 갱신 실패 시 인증 실패 처리
-            if (options.onUnauthorized) {
-              options.onUnauthorized();
-            }
-          }
-        } else {
-          // 리프레시 토큰 함수가 없는 경우 인증 실패 처리
-          if (options.onUnauthorized) {
-            options.onUnauthorized();
-          } else if (browser) {
-            // 기본 동작: 로그인 페이지로 리다이렉트
-            goto('/login');
-          }
+        error.response.data = {
+          success: false,
+          message: errorMessage,
+          timestamp: new Date().toISOString()
+        };
+      } else {
+        // 응답 데이터가 없는 경우 기본 오류 응답 생성
+        if (error.response) {
+          error.response.data = {
+            success: false,
+            message: error.message || '요청 처리 중 오류가 발생했습니다.',
+            timestamp: new Date().toISOString()
+          };
         }
       }
-
+      
       return Promise.reject(error);
     }
   );

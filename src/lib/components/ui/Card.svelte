@@ -15,13 +15,13 @@
   export let padding = true;
   
   // 카드 그림자 크기
-  export let shadow: 'none' | 'sm' | 'md' | 'lg' | 'xl' = 'md';
+  export let shadow = true;
   
   // 카드 둥근 모서리 크기
-  export let rounded: 'none' | 'sm' | 'md' | 'lg' | 'xl' | 'full' = 'md';
+  export let rounded = true;
   
   // 카드 테두리 표시 여부
-  export let bordered = true;
+  export let border = true;
   
   // 카드 호버 효과
   export let hover = false;
@@ -30,29 +30,16 @@
   export let className = '';
   
   // 그림자 클래스 계산
-  $: shadowClass = {
-    none: '',
-    sm: 'shadow-sm',
-    md: 'shadow',
-    lg: 'shadow-lg',
-    xl: 'shadow-xl'
-  }[shadow];
+  $: shadowClass = shadow ? 'shadow-md' : '';
   
   // 둥근 모서리 클래스 계산
-  $: roundedClass = {
-    none: 'rounded-none',
-    sm: 'rounded-sm',
-    md: 'rounded-md',
-    lg: 'rounded-lg',
-    xl: 'rounded-xl',
-    full: 'rounded-full'
-  }[rounded];
+  $: roundedClass = rounded ? 'rounded-lg' : '';
   
   // 테두리 클래스 계산
-  $: borderClass = bordered ? 'border border-gray-200 dark:border-gray-700' : '';
+  $: borderClass = border ? 'border border-gray-200 dark:border-gray-700' : '';
   
   // 호버 클래스 계산
-  $: hoverClass = hover ? 'transition-transform duration-300 hover:-translate-y-1 hover:shadow-lg' : '';
+  $: hoverClass = hover ? 'hover:shadow-lg transition-shadow duration-300' : '';
   
   // 최종 클래스 계산
   $: cardClasses = `
@@ -63,6 +50,7 @@
     ${className}
     bg-white dark:bg-gray-800
     overflow-hidden
+    {padding ? 'p-0' : ''}
   `;
   
   // 패딩 클래스 계산

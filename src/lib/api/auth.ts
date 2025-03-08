@@ -18,7 +18,23 @@ export interface UserData {
   // 필요한 다른 필드 추가
 }
 
-export interface LoginResponse {
+// 새로운 응답 인터페이스 정의
+export interface ResponseBase {
+  success: boolean;
+  message: string;
+  timestamp: string;
+}
+
+export interface ResponseData<T> extends ResponseBase {
+  data?: T;
+}
+
+export interface ResponseListData<T> extends ResponseBase {
+  data: T[];
+  total_count: number;
+}
+
+export interface LoginResponseData {
   user: {
     id: string;
     email: string;
@@ -31,12 +47,15 @@ export interface LoginResponse {
   };
 }
 
-export interface UserResponse {
+export interface UserResponseData {
   id: string;
   email: string;
   name?: string;
   [key: string]: unknown;
 }
+
+export type LoginResponse = ResponseData<LoginResponseData>;
+export type UserResponse = ResponseData<UserResponseData>;
 
 // 토큰 가져오기 함수 (인터셉터에서 사용)
 export const getTokenFromStorage = (): string | null => {
@@ -56,6 +75,7 @@ export const getRefreshTokenFromStorage = (): string | null => {
 
 // 토큰 저장 함수
 export const saveTokensToStorage = (accessToken: string, refreshToken: string): void => {
+  console.log('saveTokensToStorage 호출됨:', accessToken, refreshToken);
   if (browser) {
     localStorage.setItem('token', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
@@ -124,7 +144,11 @@ export const refreshAuthToken = async (): Promise<string | null> => {
       refresh_token: refreshToken
     });
 
-    const { tokens } = response.data;
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.message || '토큰 갱신 실패');
+    }
+
+    const { tokens } = response.data.data;
     saveTokensToStorage(tokens.access_token, tokens.refresh_token);
     
     // authStore 업데이트 (동적 가져오기로 순환 참조 방지)
@@ -183,8 +207,10 @@ export const login = async (email: string, password: string): Promise<LoginRespo
   });
   
   // 로그인 성공 시 토큰 저장
-  const { tokens } = response.data;
-  saveTokensToStorage(tokens.access_token, tokens.refresh_token);
+  if (response.data.success && response.data.data) {
+    const { tokens } = response.data.data;
+    saveTokensToStorage(tokens.access_token, tokens.refresh_token);
+  }
   
   return response.data;
 };
@@ -198,28 +224,47 @@ export const register = async (userData: UserData): Promise<LoginResponse> => {
   const response = await authApi.post<LoginResponse>('api/v1/auth/local/register', requestData);
   
   // 회원가입 성공 시 토큰 저장
-  const { tokens } = response.data;
-  saveTokensToStorage(tokens.access_token, tokens.refresh_token);
+  if (response.data.success && response.data.data) {
+    const { tokens } = response.data.data;
+    saveTokensToStorage(tokens.access_token, tokens.refresh_token);
+  }
   
   return response.data;
 };
 
-export const logout = async (): Promise<boolean> => {
+export const logout = async (): Promise<ResponseBase> => {
   try {
-    await authApi.post('api/v1/auth/common/logout');
+    const response = await authApi.post<ResponseBase>('api/v1/auth/common/logout');
     removeTokensFromStorage();
-    return true;
+    return response.data;
   } catch (error) {
     console.error('로그아웃 실패:', error);
     // 로그아웃 실패해도 토큰은 삭제
     removeTokensFromStorage();
-    return false;
+    return {
+      success: false,
+      message: '로그아웃 처리 중 오류가 발생했습니다.',
+      timestamp: new Date().toISOString()
+    };
   }
 };
 
 export const getCurrentUser = async (): Promise<UserResponse | null> => {
   try {
-    const response = await authApi.get<UserResponse>('api/v1/users/me');
+    // 토큰 가져오기
+    const token = getTokenFromStorage();
+    if (!token) {
+      console.error('토큰이 없습니다. 사용자 정보를 가져올 수 없습니다.');
+      return null;
+    }
+    
+    // Authorization 헤더에 토큰 명시적 추가
+    const response = await authApi.get<UserResponse>('api/v1/users/me', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
     return response.data;
   } catch (error) {
     console.error('사용자 정보 가져오기 실패:', error);

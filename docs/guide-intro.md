@@ -71,23 +71,25 @@ src/
 - `DELETE /api/v1/tasks/{id}` - 태스크 삭제
 
 ### Image API 엔드포인트 (Swagger 기준, Main API 서버: http://facreport.iptime.org:5008)
-- `GET /api/v1/tasks/{task_id}/images` - 태스크별 이미지 목록 조회
-- `GET /api/v1/images/{id}` - 특정 이미지 상세 조회
-- `POST /api/v1/tasks/{task_id}/images` - 이미지 업로드
-- `PUT /api/v1/images/{id}` - 이미지 정보 업데이트
-- `DELETE /api/v1/images/{id}` - 이미지 삭제
-- `POST /api/v1/main/images/receipt_area/{image_id}` - **영수증 영역 생성**
-- `PATCH /api/v1/main/images/receipt_area/{image_id}` - **영수증 영역 선택**
-- `POST /api/v1/main/images/extract_ocr/{image_id}` - **영수증의 문자열 추출**
+- `GET /api/v1/main/tasks/{task_id}/images` - 태스크별 이미지 목록 조회
+- `GET /api/v1/main/images/{id}` - 특정 이미지 상세 조회
+- `POST /api/v1/main/tasks/{task_id}/images` - 이미지 업로드
+- `PUT /api/v1/main/images/{id}` - 이미지 정보 업데이트
+- `DELETE /api/v1/main/images/{id}` - 이미지 삭제
+- `POST /api/v1/main/images/{image_id}/receipt-area` - **영수증 영역 생성**
+- `PATCH /api/v1/main/images/{image_id}/receipt-area` - **영수증 영역 선택**
+- `POST /api/v1/main/images/{image_id}/ocr` - **영수증의 문자열 추출**
 
 
 ### Receipt API 엔드포인트 (Swagger 기준, Main API 서버: http://facreport.iptime.org:5008)
-- `GET /api/v1/images/{image_id}/receipts` - 이미지별 영수증 목록 조회
-- `GET /api/v1/receipts/{id}` - 특정 영수증 상세 조회
-- `POST /api/v1/images/{image_id}/receipts` - 영수증 정보 추가
-- `PUT /api/v1/receipts/{id}` - 영수증 정보 업데이트
-- `DELETE /api/v1/receipts/{id}` - 영수증 정보 삭제
-- `POST /api/main/v1/receipts/ask_gpt` - **Analyze Receipt With Gpt**
+- `GET /api/v1/main/images/{image_id}/receipts` - 이미지별 영수증 목록 조회
+- `GET /api/v1/main/receipts/{id}` - 특정 영수증 상세 조회
+- `POST /api/v1/main/images/{image_id}/receipts` - 영수증 정보 추가
+- `PUT /api/v1/main/receipts/{id}` - 영수증 정보 업데이트
+- `DELETE /api/v1/main/receipts/{id}` - 영수증 정보 삭제
+- `POST /api/main/v1/main//receipts/{receipt_id}/gpt-analysis` - **Analyze Receipt With Gpt**
+
+
 
 ## 5. 개발 규칙 및 지침
 

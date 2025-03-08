@@ -6,8 +6,8 @@
   // 네비게이션 항목
   const navItems = [
     { label: '대시보드', path: '/dashboard', icon: '📊' },
-    { label: '보고서', path: '/reports', icon: '📝' },
-    { label: '분석', path: '/analytics', icon: '📈' },
+    { label: '영수증', path: '/receipts', icon: '🧾' },
+    { label: '태스크', path: '/tasks', icon: '📋' },
     { label: '설정', path: '/settings', icon: '⚙️' }
   ];
 
