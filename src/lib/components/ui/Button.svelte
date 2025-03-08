@@ -54,15 +54,33 @@
   $: widthClass = fullWidth ? 'w-full' : '';
   
   // 최종 클래스 계산
-  $: buttonClasses = `inline-flex items-center justify-center font-medium rounded-md transition-colors ${variantClasses} ${sizeClasses} ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${className}`;
+  $: buttonClasses = `inline-flex items-center justify-center font-medium rounded-md transition-colors ${variantClasses} ${sizeClasses} ${widthClass} ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${className}`;
 </script>
 
 {#if href !== undefined}
   <a href={href} class={buttonClasses} role="button" aria-disabled={disabled}>
+    {#if icon && iconPosition === 'left'}
+      <span class="mr-2">{icon}</span>
+    {/if}
     <slot />
+    {#if icon && iconPosition === 'right'}
+      <span class="ml-2">{icon}</span>
+    {/if}
+    {#if loading}
+      <span class="ml-2 animate-spin">⟳</span>
+    {/if}
   </a>
 {:else}
   <button {type} class={buttonClasses} {disabled} on:click>
+    {#if icon && iconPosition === 'left'}
+      <span class="mr-2">{icon}</span>
+    {/if}
     <slot />
+    {#if icon && iconPosition === 'right'}
+      <span class="ml-2">{icon}</span>
+    {/if}
+    {#if loading}
+      <span class="ml-2 animate-spin">⟳</span>
+    {/if}
   </button>
 {/if} 

@@ -2,11 +2,26 @@ import { writable } from 'svelte/store';
 import { taskAPI } from '$lib/api/task';
 import type { Task, CreateTaskDto, UpdateTaskDto } from '$lib/types/task.types';
 
+// 태스크 상태 타입 정의
 interface TaskState {
   tasks: Task[];
   currentTask: Task | null;
   loading: boolean;
   error: string | null;
+}
+
+// API 응답에서 받을 수 있는 태스크 데이터 타입
+interface ApiTaskData {
+  id?: string;
+  userId?: string;
+  taskName?: string;
+  description?: string | null;
+  dueDate?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  state?: number;
+  receipts?: Record<string, unknown>[] | null;
+  [key: string]: unknown;
 }
 
 const initialState: TaskState = {
@@ -18,23 +33,45 @@ const initialState: TaskState = {
 
 const { subscribe, update } = writable(initialState);
 
+// API 응답 데이터를 Task 인터페이스에 맞게 변환하는 함수
+function mapApiTaskToTask(apiTask: ApiTaskData): Task {
+  console.log('mapApiTaskToTask apiTask', apiTask);
+  return {
+    id: apiTask.id || '',
+    taskName: typeof apiTask.task_name === 'string' ? apiTask.task_name : (typeof apiTask.taskName === 'string' ? apiTask.taskName : ''),
+    description: typeof apiTask.description === 'string' ? apiTask.description : null,
+    dueDate: typeof apiTask.due_date === 'string' ? apiTask.due_date : (typeof apiTask.dueDate === 'string' ? apiTask.dueDate : null),
+    createdAt: typeof apiTask.created_at === 'string' ? apiTask.created_at : (typeof apiTask.createdAt === 'string' ? apiTask.createdAt : new Date().toISOString()),
+    updatedAt: typeof apiTask.updated_at === 'string' ? apiTask.updated_at : (typeof apiTask.updatedAt === 'string' ? apiTask.updatedAt : new Date().toISOString()),
+    state: typeof apiTask.state === 'number' ? apiTask.state : 1,
+    receipts: Array.isArray(apiTask.receipts) ? apiTask.receipts : null
+  };
+}
+
 export const taskStore = {
   subscribe,
   loadTasks: async () => {
     update(state => ({ ...state, loading: true, error: null }));
     try {
-      const response = await taskAPI.getTasks();
+      const tasks = await taskAPI.getTasks();
+
+      console.log('loadTasks tasks', tasks);
+      console.log('loadTasks tasks type', Array.isArray(tasks) ? 'array' : typeof tasks);
+
+      // API 응답 데이터를 Task 인터페이스에 맞게 변환
+      const mappedTasks = Array.isArray(tasks) 
+        ? tasks.map(task => mapApiTaskToTask(task as ApiTaskData))
+        : [];
       
-      if (!response.success) {
-        throw new Error(response.message || '태스크를 불러오는데 실패했습니다.');
-      }
+      console.log('Mapped tasks:', mappedTasks);
       
       update(state => ({ 
         ...state, 
-        tasks: response.data || [], 
+        tasks: mappedTasks, 
         loading: false 
       }));
     } catch (error) {
+      console.error('Error in loadTasks:', error);
       const errorMsg = error instanceof Error ? error.message : '태스크를 불러오는데 실패했습니다.';
       update(state => ({ ...state, loading: false, error: errorMsg }));
     }
@@ -45,13 +82,14 @@ export const taskStore = {
   createTask: async (taskData: CreateTaskDto) => {
     update(state => ({ ...state, loading: true, error: null }));
     try {
-      const response = await taskAPI.createTask(taskData);
+      const task = await taskAPI.createTask(taskData);
+      console.log('createTask task', task);
       
-      if (!response.success || !response.data) {
-        throw new Error(response.message || '태스크 생성에 실패했습니다.');
+      if (!task) {
+        throw new Error('태스크 생성에 실패했습니다.');
       }
       
-      const newTask = response.data;
+      const newTask = mapApiTaskToTask(task as ApiTaskData);
       
       update(state => ({ 
         ...state, 
@@ -61,6 +99,7 @@ export const taskStore = {
       
       return newTask;
     } catch (error) {
+      console.error('Error in createTask:', error);
       const errorMsg = error instanceof Error ? error.message : '태스크 생성에 실패했습니다.';
       update(state => ({ ...state, loading: false, error: errorMsg }));
       throw error;
@@ -69,13 +108,13 @@ export const taskStore = {
   updateTask: async (id: string, taskData: UpdateTaskDto) => {
     update(state => ({ ...state, loading: true, error: null }));
     try {
-      const response = await taskAPI.updateTask(id, taskData);
+      const task = await taskAPI.updateTask(id, taskData);
       
-      if (!response.success || !response.data) {
-        throw new Error(response.message || '태스크 업데이트에 실패했습니다.');
+      if (!task) {
+        throw new Error('태스크 업데이트에 실패했습니다.');
       }
       
-      const updatedTask = response.data;
+      const updatedTask = mapApiTaskToTask(task as ApiTaskData);
       
       update(state => ({
         ...state,
@@ -86,6 +125,7 @@ export const taskStore = {
       
       return updatedTask;
     } catch (error) {
+      console.error('Error in updateTask:', error);
       const errorMsg = error instanceof Error ? error.message : '태스크 업데이트에 실패했습니다.';
       update(state => ({ ...state, loading: false, error: errorMsg }));
       throw error;
@@ -96,8 +136,8 @@ export const taskStore = {
     try {
       const response = await taskAPI.deleteTask(id);
       
-      if (!response.success) {
-        throw new Error(response.message || '태스크 삭제에 실패했습니다.');
+      if (!response) {
+        throw new Error('태스크 삭제에 실패했습니다.');
       }
       
       update(state => ({
@@ -109,6 +149,7 @@ export const taskStore = {
       
       return true;
     } catch (error) {
+      console.error('Error in deleteTask:', error);
       const errorMsg = error instanceof Error ? error.message : '태스크 삭제에 실패했습니다.';
       update(state => ({ ...state, loading: false, error: errorMsg }));
       return false;

@@ -83,7 +83,7 @@
     <Card>
       <div class="p-6">
         <div class="flex justify-between items-start mb-4">
-          <h2 class="text-2xl font-bold">{task.task_name}</h2>
+          <h2 class="text-2xl font-bold">{task.taskName}</h2>
           <span class={`px-3 py-1 text-sm font-semibold rounded-full ${getStateClass(task.state)}`}>
             {getStateLabel(task.state)}
           </span>
@@ -93,10 +93,10 @@
           <div>
             <h3 class="text-lg font-semibold mb-2">기본 정보</h3>
             <div class="space-y-2">
-              <p><span class="font-medium">생성일:</span> {new Date(task.created_at).toLocaleDateString()}</p>
-              <p><span class="font-medium">수정일:</span> {new Date(task.updated_at).toLocaleDateString()}</p>
-              {#if task.due_date}
-                <p><span class="font-medium">마감일:</span> {new Date(task.due_date).toLocaleDateString()}</p>
+              <p><span class="font-medium">생성일:</span> {new Date(task.createdAt).toLocaleDateString()}</p>
+              <p><span class="font-medium">수정일:</span> {new Date(task.updatedAt).toLocaleDateString()}</p>
+              {#if task.dueDate}
+                <p><span class="font-medium">마감일:</span> {new Date(task.dueDate).toLocaleDateString()}</p>
               {/if}
             </div>
           </div>
@@ -113,10 +113,10 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {#each task.receipts as receipt}
                 <div class="border rounded-lg overflow-hidden">
-                  <img src={receipt.image_url} alt="Receipt" class="w-full h-48 object-cover" />
+                  <img src={receipt.imageUrl} alt="Receipt" class="w-full h-48 object-cover" />
                   <div class="p-3">
                     <p class="font-medium">{receipt.title || '제목 없음'}</p>
-                    <p class="text-sm text-gray-500">{new Date(receipt.created_at).toLocaleDateString()}</p>
+                    <p class="text-sm text-gray-500">{new Date(receipt.createdAt).toLocaleDateString()}</p>
                   </div>
                 </div>
               {/each}

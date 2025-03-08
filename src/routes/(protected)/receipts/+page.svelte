@@ -30,8 +30,8 @@
             purchase_date: '2023-03-01',
             total_amount: 35000,
             image_url: 'https://via.placeholder.com/300x400?text=Receipt+1',
-            created_at: '2023-03-01T12:00:00Z',
-            updated_at: '2023-03-01T12:00:00Z',
+            createdAt: '2023-03-01T12:00:00Z',
+            updatedAt: '2023-03-01T12:00:00Z',
             state: 1
           },
           {
@@ -41,8 +41,8 @@
             purchase_date: '2023-03-05',
             total_amount: 45000,
             image_url: 'https://via.placeholder.com/300x400?text=Receipt+2',
-            created_at: '2023-03-05T18:30:00Z',
-            updated_at: '2023-03-05T18:30:00Z',
+            createdAt: '2023-03-05T18:30:00Z',
+            updatedAt: '2023-03-05T18:30:00Z',
             state: 1
           },
           {
@@ -52,8 +52,8 @@
             purchase_date: '2023-03-10',
             total_amount: 8500,
             image_url: 'https://via.placeholder.com/300x400?text=Receipt+3',
-            created_at: '2023-03-10T09:15:00Z',
-            updated_at: '2023-03-10T09:15:00Z',
+            createdAt: '2023-03-10T09:15:00Z',
+            updatedAt: '2023-03-10T09:15:00Z',
             state: 2
           }
         ];
@@ -133,7 +133,7 @@
             </div>
             
             <div class="flex justify-between items-center mt-4">
-              <span class="text-xs text-gray-500">생성일: {new Date(receipt.created_at).toLocaleDateString()}</span>
+              <span class="text-xs text-gray-500">생성일: {new Date(receipt.createdAt).toLocaleDateString()}</span>
               <div class="flex space-x-2">
                 <Button href={`/receipts/${receipt.id}`} variant="outline" size="sm">상세</Button>
                 <Button href={`/receipts/${receipt.id}/edit`} variant="outline" size="sm">편집</Button>

@@ -18,16 +18,8 @@ const taskClient = axios.create({
   }
 });
 
-// axios 인스턴스 생성
-const authApi = axios.create({
-  baseURL: 'http://facreport.iptime.org:5009',
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
-
 // 인터셉터 설정 - 모든 요청에 인증 토큰 추가
-setupInterceptors(authApi, {
+setupInterceptors(taskClient, {
   getToken: getTokenFromStorage,
   refreshToken: refreshAuthToken,
   onUnauthorized: () => {
@@ -44,30 +36,46 @@ export const taskAPI = {
   // 모든 태스크 가져오기
   getTasks: async () => {
     const response = await taskClient.get<ResponseListData<Task>>('/api/v1/main/tasks');
-    return response.data;
+    console.log('getTasks response', response);
+    if (!response.data.success) {
+      throw new Error(response.data.message || '태스크를 불러오는데 실패했습니다.');
+    }
+    return response.data.data;
   },
   
   // ID로 태스크 가져오기
   getTaskById: async (id: string) => {
     const response = await taskClient.get<ResponseData<Task>>(`/api/v1/main/tasks/${id}`);
-    return response.data;
+    if (!response.data.success) {
+      throw new Error(response.data.message || '태스크를 불러오는데 실패했습니다.');
+    }
+    return response.data.data;
   },
   
   // 새 태스크 생성하기
   createTask: async (taskData: CreateTaskDto) => {
     const response = await taskClient.post<ResponseData<Task>>('/api/v1/main/tasks', taskData);
-    return response.data;
+    if (!response.data.success) {
+      throw new Error(response.data.message || '태스크를 생성하는데 실패했습니다.');
+    }
+    return response.data.data;
   },
   
   // 태스크 업데이트하기
   updateTask: async (id: string, taskData: UpdateTaskDto) => {
     const response = await taskClient.put<ResponseData<Task>>(`/api/v1/main/tasks/${id}`, taskData);
-    return response.data;
+    if (!response.data.success) {
+      throw new Error(response.data.message || '태스크를 업데이트하는데 실패했습니다.');
+    }
+    return response.data.data;
   },
   
   // 태스크 삭제하기
   deleteTask: async (id: string) => {
     const response = await taskClient.delete<ResponseData<boolean>>(`/api/v1/main/tasks/${id}`);
-    return response.data;
+    if (!response.data.success) {
+      throw new Error(response.data.message || '태스크를 삭제하는데 실패했습니다.');
+    }
+    return response.data.data;
   }
 }; 

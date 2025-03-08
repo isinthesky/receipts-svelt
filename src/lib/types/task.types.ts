@@ -1,17 +1,17 @@
 // 공통 필드 재사용 (공유 속성)
 export interface BaseEntity {
   id: string;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
   state: number; // 1: enable, 2: hide, 0: disable
 }
 
 // 태스크 인터페이스
 export interface Task extends BaseEntity {
-  user_id: string;
-  task_name: string;
+  id: string;
+  taskName: string;
   description: string | null;
-  due_date: string | null;
+  dueDate: string | null;
   receipts: Record<string, unknown>[] | null;
 }
 
@@ -19,6 +19,7 @@ export interface Task extends BaseEntity {
 export interface CreateTaskDto {
   taskName: string;
   description?: string;
+  dueDate?: string;
 }
 
 // 태스크 업데이트 시 필요한 데이터 타입

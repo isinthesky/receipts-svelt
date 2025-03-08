@@ -19,10 +19,16 @@
   $: sortedTasks = sortTasks(filteredTasks);
 
   function filterTasks(tasks: Task[]): Task[] {
+    console.log('filterTasks', tasks);
+    if (!tasks || tasks.length === 0) {
+      return [];
+    }
+    
     return tasks.filter(task => {
       // 검색어 필터링
-      const matchesSearch = task.task_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           (task.description && task.description.toLowerCase().includes(searchTerm.toLowerCase()));
+      const matchesSearch = 
+        (task.taskName?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+        (task.description && task.description.toLowerCase().includes(searchTerm.toLowerCase()));
       
       // 상태 필터링
       let matchesState = true;
@@ -192,7 +198,7 @@
         <Card>
           <div class="p-4">
             <div class="flex justify-between items-start">
-              <h2 class="text-xl font-semibold mb-2">{task.task_name}</h2>
+              <h2 class="text-xl font-semibold mb-2">{task.taskName}</h2>
               <span class={`px-2 py-1 text-xs font-semibold rounded-full ${getStateClass(task.state)}`}>
                 {getStateLabel(task.state)}
               </span>
@@ -202,12 +208,12 @@
               <p class="text-gray-600 mb-4">{task.description}</p>
             {/if}
             
-            {#if task.due_date}
-              <p class="text-sm text-gray-500 mb-4">마감일: {new Date(task.due_date).toLocaleDateString()}</p>
+            {#if task.dueDate}
+              <p class="text-sm text-gray-500 mb-4">마감일: {new Date(task.dueDate).toLocaleDateString()}</p>
             {/if}
             
             <div class="flex justify-between items-center mt-4">
-              <span class="text-xs text-gray-500">생성일: {new Date(task.created_at).toLocaleDateString()}</span>
+              <span class="text-xs text-gray-500">생성일: {new Date(task.createdAt).toLocaleDateString()}</span>
               <div class="flex space-x-2">
                 <Button href={`/tasks/${task.id}`} variant="outline" size="sm">상세</Button>
                 <Button href={`/tasks/${task.id}/edit`} variant="outline" size="sm">편집</Button>
