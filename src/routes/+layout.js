@@ -43,13 +43,13 @@ export async function load({ url }) {
       
       // 이미 인증된 사용자가 인증 경로에 접근하려고 할 때
       if (value && isAuthRoute) {
-        goto('/receipts');
+        goto('/tasks');
       }
       
       // 루트 경로에 접근했을 때 자동 리디렉션
       if (isRootRoute) {
         if (value) {
-          goto('/receipts');
+          goto('/dashboard');
         }
       }
     });

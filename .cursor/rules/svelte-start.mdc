@@ -1,5 +1,5 @@
 ---
-description:  
+description: 
 globs: 
 alwaysApply: false
 ---
@@ -8,47 +8,53 @@ alwaysApply: false
 
 [guide-intro.md](mdc:docs/guide-intro.md)
 
-# Svelte 프론트엔드 구현 수정 작업 계획
+# 페이지 계증 흐름 가이드
+
+[task-detail-flow.md](mdc:docs/task-detail-flow.md)
+
+# ui guide sample
+
+[task-detail-ui.svg](mdc:docs/task-detail-ui.svg)
+
+[image-detail-modal.svg](mdc:docs/image-detail-modal.svg)
+
+# Svelte 프론트엔드 구현 작업 계획
 
 스마트 문서 기반 영수증 처리 시스템을 위한 Svelte 프론트엔드 구현 계획을 수정했습니다. 보고서와 분석 관련 엔드포인트를 제거하고 Task, Image, Receipt 모델을 효과적으로 다루는 UI 구성으로 변경했습니다.
 
 ## API 서버 주요 엔드포인트 참조
 
-### Auth API 서버 (http://facreport.iptime.org:8007/docs)
+### Auth API 엔드포인트 (Swagger 기준, Auth API 서버: http://facreport.iptime.org:5009)
+- `POST /api/v1/auth/login` - 로그인 (이메일/비밀번호 필요)
+- `POST /api/v1/auth/register` - 회원가입
+- `POST /api/v1/auth/refresh` - 토큰 갱신
+- `GET /api/v1/auth/me` - 현재 사용자 정보 조회
+- `POST /api/v1/auth/logout` - 로그아웃
 
-#### 인증 관련 엔드포인트
-- `POST /auth/login` - 로그인 (이메일/비밀번호 필요)
-- `POST /auth/register` - 회원가입
-- `POST /auth/refresh` - 토큰 갱신
-- `GET /auth/me` - 현재 사용자 정보 조회
-- `POST /auth/logout` - 로그아웃
+### Task API 엔드포인트 (Swagger 기준, Main API 서버: http://facreport.iptime.org:5008)
+- `GET /api/v1/tasks` - 태스크 목록 조회
+- `GET /api/v1/tasks/{id}` - 특정 태스크 상세 조회
+- `POST /api/v1/tasks` - 새 태스크 생성
+- `PUT /api/v1/tasks/{id}` - 태스크 업데이트
+- `DELETE /api/v1/tasks/{id}` - 태스크 삭제
 
-### Main API 서버 (http://facreport.iptime.org:8006/docs)
+### Image API 엔드포인트 (Swagger 기준, Main API 서버: http://facreport.iptime.org:5008)
+- `GET /api/v1/main/tasks/{task_id}/images` - 태스크별 이미지 목록 조회
+- `GET /api/v1/main/images/{id}` - 특정 이미지 상세 조회
+- `POST /api/v1/main/tasks/{task_id}/images` - 이미지 업로드
+- `PUT /api/v1/main/images/{id}` - 이미지 정보 업데이트
+- `DELETE /api/v1/main/images/{id}` - 이미지 삭제
+- `POST /api/v1/main/images/{image_id}/receipt-area` - **영수증 영역 생성**
+- `PATCH /api/v1/main/images/{image_id}/receipt-area` - **영수증 영역 선택**
+- `POST /api/v1/main/images/{image_id}/ocr` - **영수증의 문자열 추출**
 
-#### 사용자 관련 엔드포인트
-- `GET /users/profile` - 사용자 프로필 조회
-- `PUT /users/profile` - 사용자 프로필 업데이트
-
-#### 태스크 관련 엔드포인트 (추가 필요)
-- `GET /tasks` - 태스크 목록 조회
-- `GET /tasks/{id}` - 특정 태스크 상세 조회
-- `POST /tasks` - 새 태스크 생성
-- `PUT /tasks/{id}` - 태스크 업데이트
-- `DELETE /tasks/{id}` - 태스크 삭제
-
-#### 이미지 관련 엔드포인트 (추가 필요)
-- `GET /tasks/{task_id}/images` - 태스크별 이미지 목록 조회
-- `GET /images/{id}` - 특정 이미지 상세 조회
-- `POST /tasks/{task_id}/images` - 이미지 업로드
-- `PUT /images/{id}` - 이미지 정보 업데이트
-- `DELETE /images/{id}` - 이미지 삭제
-
-#### 영수증 관련 엔드포인트 (추가 필요)
-- `GET /images/{image_id}/receipts` - 이미지별 영수증 목록 조회
-- `GET /receipts/{id}` - 특정 영수증 상세 조회
-- `POST /images/{image_id}/receipts` - 영수증 정보 추가
-- `PUT /receipts/{id}` - 영수증 정보 업데이트
-- `DELETE /receipts/{id}` - 영수증 정보 삭제
+### Receipt API 엔드포인트 (Swagger 기준, Main API 서버: http://facreport.iptime.org:5008)
+- `GET /api/v1/main/images/{image_id}/receipts` - 이미지별 영수증 목록 조회
+- `GET /api/v1/main/receipts/{id}` - 특정 영수증 상세 조회
+- `POST /api/v1/main/images/{image_id}/receipts` - 영수증 정보 추가
+- `PUT /api/v1/main/receipts/{id}` - 영수증 정보 업데이트
+- `DELETE /api/v1/main/receipts/{id}` - 영수증 정보 삭제
+- `POST /api/main/v1/main//receipts/{receipt_id}/gpt-analysis` - **Analyze Receipt With Gpt**
 
 ---
 
@@ -173,7 +179,8 @@ alwaysApply: false
 
 ### 레이아웃 컴포넌트 구현
 
-- [ ] 기본 레이아웃 (`src/routes/+layout.svelte`)
+- [ ] 레이아웃 컴포넌트 구현
+  - [ ] 기본 레이아웃 (`src/routes/+layout.svelte`)
   - [ ] 인증 상태에 따른 레이아웃 변경
   - [ ] 다크모드 지원
 - [ ] 사이드바 컴포넌트 (`src/lib/components/layout/Sidebar.svelte`)
@@ -182,7 +189,6 @@ alwaysApply: false
   - [ ] 반응형 디자인
 - [ ] 네비게이션 바 (`src/lib/components/layout/Navbar.svelte`)
   - [ ] 사용자 메뉴
-  - [ ] 알림 표시
   - [ ] 검색 기능 (선택사항)
 
 ### 공통 UI 컴포넌트 구현
@@ -190,7 +196,6 @@ alwaysApply: false
 - [ ] 버튼 컴포넌트 (`src/lib/components/ui/Button.svelte`)
 - [ ] 입력 필드 컴포넌트 (`src/lib/components/ui/Input.svelte`)
 - [ ] 카드 컴포넌트 (`src/lib/components/ui/Card.svelte`)
-- [ ] 알림 컴포넌트 (`src/lib/components/ui/Alert.svelte`)
 - [ ] 로딩 인디케이터 (`src/lib/components/ui/Loading.svelte`)
 - [ ] 모달 컴포넌트 (`src/lib/components/ui/Modal.svelte`)
 - [ ] 드롭존 컴포넌트 (`src/lib/components/ui/Dropzone.svelte`) - 이미지 업로드용
@@ -200,7 +205,6 @@ alwaysApply: false
 - [ ] 앱 스토어 완성 (`src/lib/stores/app.js`)
   - [ ] 다크 모드 설정
   - [ ] 사이드바 상태
-  - [ ] 알림 시스템
 
 ### 3일차 작업 검증
 
@@ -223,6 +227,11 @@ alwaysApply: false
   - [ ] updateTask 함수 구현
   - [ ] deleteTask 함수 구현
 
+- [ ] `src/lib/api/image.js` 부분 구현
+  - [ ] getImagesByTaskId 함수 구현 - 새로 추가
+  - [ ] getImageById 함수 구현
+  - [ ] uploadImage 함수 구현 (태스크 ID 연결)
+
 ### 태스크 관련 화면 구현
 
 - [ ] 태스크 목록 페이지 (`src/routes/(protected)/tasks/+page.svelte`)
@@ -234,13 +243,20 @@ alwaysApply: false
   - [ ] 태스크 정보 표시
   - [ ] 편집 기능
   - [ ] 삭제 기능
-  - [ ] 이미지 목록 표시
+  - [ ] **이미지 목록 통합 섹션**  
+  - [ ] 이미지 목록 그리드/갤러리 뷰
+  - [ ] 이미지 필터링 (상태별)
+  - [ ] 이미지 정렬 (날짜/크기별)
+  - [ ] 이미지 검색 기능
+  - [ ] 이미지 업로드 버튼 (해당 태스크에 직접 연결)
+  - [ ] 이미지 카드 클릭 시 상세 정보 모달
+  - [ ] 이미지별 영수증 정보 요약 표시
 - [ ] 태스크 생성 페이지 (`src/routes/(protected)/tasks/new/+page.svelte`)
   - [ ] 폼 구현
   - [ ] 유효성 검사
   - [ ] 제출 처리
 
-### 태스크 스토어 완성
+### 태스크 및 이미지 스토어 구현
 
 - [ ] `src/lib/stores/tasks.js` 완성
   - [ ] 태스크 목록 상태
@@ -248,11 +264,38 @@ alwaysApply: false
   - [ ] 로딩/오류 상태
   - [ ] CRUD 액션
 
+- [ ] `src/lib/stores/images.js` 부분 구현
+  - [ ] 태스크별 이미지 목록 상태 - 새로 추가
+  - [ ] 이미지 로딩 상태
+  - [ ] 이미지 업로드 상태 및 진행률
+
+### 이미지 관련 컴포넌트 구현
+
+- [ ] `src/lib/components/features/TaskImages.svelte`
+  - [ ] 태스크별 이미지 목록 그리드 표시
+  - [ ] 필터링 및 정렬 컨트롤
+  - [ ] 페이지네이션
+  - [ ] 검색 기능
+
+- [ ] `src/lib/components/features/ImageCard.svelte`
+  - [ ] 이미지 썸네일 표시
+  - [ ] 이미지 기본 정보 표시 (파일명, 크기, 날짜)
+  - [ ] 연결된 영수증 개수 표시
+  - [ ] 액션 메뉴 (상세보기, 삭제 등)
+
+- [ ] `src/lib/components/features/ImageUpload.svelte`
+  - [ ] 드래그 앤 드롭 기능
+  - [ ] 다중 파일 업로드
+  - [ ] 업로드 진행 상태
+  - [ ] 태스크 ID 자동 연결
+
 ### 4일차 작업 검증
 
 - [ ] 개발 서버에서 태스크 목록 페이지 확인
 - [ ] 태스크 생성 기능 테스트
 - [ ] 태스크 상세 정보 조회 테스트
+- [ ] 태스크 상세 페이지에서 이미지 목록 표시 확인
+- [ ] 태스크에 이미지 업로드 기능 테스트
 - [ ] 태스크 편집 및 삭제 기능 테스트
 
 ---
@@ -267,6 +310,7 @@ alwaysApply: false
   - [ ] uploadImage 함수 구현
   - [ ] updateImage 함수 구현
   - [ ] deleteImage 함수 구현
+  - [ ] getImageWithReceipts 함수 구현
 
 ### 이미지 관련 화면 구현
 
@@ -280,19 +324,40 @@ alwaysApply: false
   - [ ] 이미지 메타데이터 표시
   - [ ] 이미지 편집 기능
   - [ ] 영수증 정보 표시
+  - [ ] 연결된 태스크 정보 표시
+  - [ ] 태스크로 돌아가기 링크
+- [ ] 이미지 모달 컴포넌트 (`src/lib/components/features/ImageModal.svelte`)
+  - [ ]이미지 전체 화면 표시
+  - [ ]메타데이터 사이드 패널
+  - [ ]영수증 목록 사이드 패널
+  - [ ]이미지 액션 메뉴
 - [ ] 이미지 업로드 컴포넌트 (`src/lib/components/features/ImageUpload.svelte`)
   - [ ] 드래그 앤 드롭 기능
   - [ ] 다중 파일 업로드
   - [ ] 업로드 진행 상태
   - [ ] 오류 처리
 
-### 이미지 스토어 완성
+### 이미지 스토어 완성 및 영수증 스토어 부분 구현
 
 - [ ] `src/lib/stores/images.js` 완성
-  - [ ] 이미지 목록 상태
   - [ ] 현재 이미지 상태
-  - [ ] 업로드 상태
+  - [ ] 이미지 편집 상태
   - [ ] CRUD 액션
+- [ ] `src/lib/stores/receipts.js` 부분 구현
+  - [ ] 이미지별 영수증 목록 상태
+  - [ ] 현재 영수증 상태
+  - [ ] 영수증 생성 상태
+
+### 테스크 상세 페이지 내 이미지 관리 기능 강화
+
+- [ ] 이미지 일괄 작업 컴포넌트 (`src/lib/components/features/BatchImageActions.svelte`)
+  - [ ] 다중 이미지 선택 기능
+  - [ ] 선택된 이미지 일괄 삭제
+  - [ ] 선택된 이미지 상태 일괄 변경
+- [ ] 이미지 필터 컴포넌트 (`src/lib/components/features/ImageFilters.svelte`)
+  - [ ] 상태별 필터링 (활성화, 숨김, 비활성화)
+  - [ ] 날짜 범위 필터링
+  - [ ] 영수증 유무 필터링
 
 ### 5일차 작업 검증
 

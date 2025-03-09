@@ -5,9 +5,10 @@
 
   // 네비게이션 항목
   const navItems = [
-    { label: '대시보드', path: '/dashboard', icon: '📊' },
-    { label: '영수증', path: '/receipts', icon: '🧾' },
-    { label: '태스크', path: '/tasks', icon: '📋' },
+    { label: '대시보드', path: '/dashboard', icon: '��' },
+    { label: '태스크 관리', path: '/tasks', icon: '📋' },
+    { label: '이미지 관리', path: '/images', icon: '🖼️' },
+    { label: '영수증 관리', path: '/receipts', icon: '🧾' },
     { label: '설정', path: '/settings', icon: '⚙️' }
   ];
 
@@ -37,7 +38,7 @@
 {#if !$appStore.sidebarOpen && window.innerWidth < 768}
   <button 
     type="button"
-    class="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden w-full h-full border-0 cursor-pointer"
+    class="fixed inset-0 bg-black bg-opacity-30 z-20 md:hidden w-full h-full border-0 cursor-pointer"
     on:click={toggleSidebar}
     on:keydown={handleKeyDown}
     aria-label="사이드바 닫기"
@@ -49,64 +50,101 @@
   class="
     fixed md:relative z-30 md:z-auto
     w-64 h-screen 
-    bg-white dark:bg-gray-800 
-    shadow-lg md:shadow-none
+    bg-sidebar
     transform transition-transform duration-300 ease-in-out
     {$appStore.sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
   "
 >
   <!-- 로고 및 앱 이름 -->
-  <div class="flex items-center justify-between h-16 px-4 border-b dark:border-gray-700">
-    <div class="flex items-center">
-      <span class="text-xl font-semibold text-gray-800 dark:text-white">Receipts App</span>
-    </div>
-    <!-- 모바일 닫기 버튼 -->
-    <button 
-      type="button"
-      class="md:hidden text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-      on:click={toggleSidebar}
-      aria-label="사이드바 닫기"
-    >
-      ✕
-    </button>
+  <div class="flex items-center justify-center h-16 border-b border-sidebar-border">
+    <span class="text-xl font-medium text-white">Receipts App</span>
   </div>
 
   <!-- 네비게이션 메뉴 -->
-  <nav class="px-2 py-4">
-    <ul class="space-y-2">
+  <nav class="px-5 py-5">
+    <ul class="space-y-3">
       {#each navItems as item}
         <li>
           <a 
             href={item.path} 
             class="
-              flex items-center px-4 py-2 rounded-md
+              flex items-center px-4 py-2.5 rounded-lg
+              transition-colors duration-200
               {currentPath.startsWith(item.path) 
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-100' 
-                : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'}
+                ? 'bg-sidebar-active text-white' 
+                : 'text-sidebar-text hover:bg-sidebar-hover hover:text-white'}
             "
             aria-current={currentPath.startsWith(item.path) ? 'page' : undefined}
           >
-            <span class="mr-3" aria-hidden="true">{item.icon}</span>
-            <span>{item.label}</span>
+            <span class="mr-3 text-lg" aria-hidden="true">{item.icon}</span>
+            <span class="font-medium">{item.label}</span>
           </a>
         </li>
       {/each}
     </ul>
   </nav>
 
-  <!-- 하단 메뉴 -->
-  <div class="absolute bottom-0 w-full border-t dark:border-gray-700">
-    <ul>
-      <li>
-        <button 
-          type="button"
-          on:click={handleLogout}
-          class="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-        >
-          <span class="mr-3" aria-hidden="true">🚪</span>
-          <span>로그아웃</span>
-        </button>
-      </li>
-    </ul>
+  <!-- 하단 사용자 정보 -->
+  <div class="absolute bottom-0 w-full border-t border-sidebar-border p-4">
+    <div class="flex items-center mb-3">
+      <div class="w-10 h-10 rounded-full bg-sidebar-user flex items-center justify-center text-white">
+        {#if $authStore.user?.name}
+          {$authStore.user.name.charAt(0).toUpperCase()}
+        {:else if $authStore.user?.email}
+          {$authStore.user.email.charAt(0).toUpperCase()}
+        {:else}
+          U
+        {/if}
+      </div>
+      <div class="ml-3">
+        <p class="text-white">{$authStore.user?.name || '사용자 이름'}</p>
+      </div>
+    </div>
+    <button 
+      type="button"
+      on:click={handleLogout}
+      class="flex items-center w-full px-4 py-2 text-sidebar-text hover:bg-sidebar-hover hover:text-white rounded-lg transition-colors duration-200"
+    >
+      <span class="mr-3 text-lg" aria-hidden="true">🚪</span>
+      <span class="font-medium">로그아웃</span>
+    </button>
   </div>
-</aside> 
+</aside>
+
+<style>
+  /* 사이드바 색상 변수 */
+  :root {
+    --sidebar-bg: #2c3e50;
+    --sidebar-active: #3498db;
+    --sidebar-hover: rgba(52, 152, 219, 0.3);
+    --sidebar-text: #ecf0f1;
+    --sidebar-border: rgba(236, 240, 241, 0.1);
+    --sidebar-user: #bdc3c7;
+  }
+  
+  /* 사이드바 스타일 */
+  .bg-sidebar {
+    background-color: var(--sidebar-bg);
+  }
+  
+  .bg-sidebar-active {
+    background-color: var(--sidebar-active);
+    opacity: 0.6;
+  }
+  
+  .bg-sidebar-hover {
+    background-color: var(--sidebar-hover);
+  }
+  
+  .text-sidebar-text {
+    color: var(--sidebar-text);
+  }
+  
+  .border-sidebar-border {
+    border-color: var(--sidebar-border);
+  }
+  
+  .bg-sidebar-user {
+    background-color: var(--sidebar-user);
+  }
+</style> 

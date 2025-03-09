@@ -76,6 +76,31 @@ export const taskStore = {
       update(state => ({ ...state, loading: false, error: errorMsg }));
     }
   },
+  getTaskById: async (id: string): Promise<Task> => {
+    update(state => ({ ...state, loading: true, error: null }));
+    try {
+      const task = await taskAPI.getTaskById(id);
+      
+      if (!task) {
+        throw new Error('태스크를 찾을 수 없습니다.');
+      }
+      
+      const mappedTask = mapApiTaskToTask(task as ApiTaskData);
+      
+      update(state => ({
+        ...state,
+        currentTask: mappedTask,
+        loading: false
+      }));
+      
+      return mappedTask;
+    } catch (error) {
+      console.error('Error in getTaskById:', error);
+      const errorMsg = error instanceof Error ? error.message : '태스크를 불러오는데 실패했습니다.';
+      update(state => ({ ...state, loading: false, error: errorMsg }));
+      throw error;
+    }
+  },
   setCurrentTask: (task: Task) => {
     update(state => ({ ...state, currentTask: task }));
   },

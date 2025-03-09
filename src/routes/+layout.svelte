@@ -74,16 +74,16 @@
   <div class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-md">
     {#each $appStore.notifications as notification}
       <div 
-        class="p-4 rounded-md shadow-md flex items-center justify-between {
-          notification.type === 'info' ? 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100' :
-          notification.type === 'success' ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100' :
-          notification.type === 'warning' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100' :
-          'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
+        class="p-4 rounded-lg shadow-md flex items-center justify-between {
+          notification.type === 'info' ? 'bg-blue-100 text-blue-800' :
+          notification.type === 'success' ? 'bg-green-100 text-green-800' :
+          notification.type === 'warning' ? 'bg-yellow-100 text-yellow-800' :
+          'bg-red-100 text-red-800'
         }"
       >
         <span>{notification.message}</span>
         <button 
-          class="ml-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          class="ml-4 text-slate-500 hover:text-slate-700"
           on:click={() => appStore.removeNotification(notification.id)}
         >
           ✕
@@ -93,18 +93,56 @@
   </div>
 {/if}
 
-<div class="min-h-screen {$appStore.darkMode ? 'dark' : ''}">
+<div class="min-h-screen app-container {$appStore.darkMode ? 'dark-mode' : 'light-mode'}">
   {#if authenticated}
     <!-- 인증된 사용자용 레이아웃 -->
-    <div class="flex h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <div class="flex h-screen">
       <Sidebar />
       <div class="flex-1 flex flex-col overflow-hidden">
         <Navbar />
-        <main class="flex-1 overflow-y-auto p-4"><slot /></main>
+        <main class="flex-1 overflow-y-auto p-5 content-area">
+          <slot />
+        </main>
       </div>
     </div>
   {:else}
     <!-- 비인증 사용자용 레이아웃 -->
-    <div class="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100"><slot /></div>
+    <div class="min-h-screen content-area">
+      <slot />
+    </div>
   {/if}
-</div> 
+</div>
+
+<style>
+  :root {
+    --color-main-bg: #f8fafc;
+    --color-content-bg: #ffffff;
+    --color-text-primary: #334155;
+    --color-text-secondary: #64748b;
+    --color-accent: #3b82f6;
+    --color-border: #e2e8f0;
+    --color-shadow: rgba(0, 0, 0, 0.05);
+  }
+  
+  .app-container {
+    background-color: var(--color-main-bg);
+    color: var(--color-text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  
+  .content-area {
+    background-color: var(--color-content-bg);
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px var(--color-shadow);
+  }
+  
+  .dark-mode {
+    --color-main-bg: #0f172a;
+    --color-content-bg: #1e293b;
+    --color-text-primary: #f1f5f9;
+    --color-text-secondary: #cbd5e1;
+    --color-accent: #60a5fa;
+    --color-border: #334155;
+    --color-shadow: rgba(0, 0, 0, 0.2);
+  }
+</style> 

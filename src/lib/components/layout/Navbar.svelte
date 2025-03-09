@@ -2,6 +2,7 @@
   import { appStore } from '$lib/stores/app';
   import { authStore } from '$lib/stores/auth';
   import { onMount } from 'svelte';
+  import { page } from '$app/stores';
   
   // 사용자 메뉴 표시 여부
   let showUserMenu = false;
@@ -67,6 +68,18 @@
     }
   }
   
+  // 현재 페이지 제목 가져오기
+  $: pageTitle = getPageTitle($page.url.pathname);
+  
+  function getPageTitle(path: string): string {
+    if (path.startsWith('/dashboard')) return '대시보드';
+    if (path.startsWith('/tasks')) return '태스크 관리';
+    if (path.startsWith('/images')) return '이미지 관리';
+    if (path.startsWith('/receipts')) return '영수증 관리';
+    if (path.startsWith('/settings')) return '설정';
+    return 'Receipts App';
+  }
+  
   // 컴포넌트 마운트 시 이벤트 리스너 등록
   onMount(() => {
     document.addEventListener('click', handleClickOutside);
@@ -77,67 +90,62 @@
   });
 </script>
 
-<header class="bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm">
-  <div class="px-4 py-3 flex items-center justify-between">
-    <!-- 왼쪽: 모바일 메뉴 버튼 및 검색 -->
-    <div class="flex items-center">
+<header class="navbar">
+  <div class="navbar-container">
+    <!-- 왼쪽: 모바일 메뉴 버튼 및 페이지 제목 -->
+    <div class="navbar-left">
       <!-- 모바일 메뉴 버튼 -->
       <button 
         type="button"
-        class="md:hidden mr-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+        class="navbar-menu-button"
         on:click={toggleSidebar}
         aria-label="사이드바 열기"
       >
-        <span aria-hidden="true">☰</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
       </button>
       
+      <!-- 페이지 제목 -->
+      <h1 class="navbar-title">{pageTitle}</h1>
+    </div>
+    
+    <!-- 오른쪽: 검색, 알림 및 사용자 메뉴 -->
+    <div class="navbar-right">
       <!-- 검색 -->
-      <div class="relative hidden md:block">
+      <div class="navbar-search">
         <label for="search-input" class="sr-only">검색</label>
         <input 
           id="search-input"
           type="text" 
           placeholder="검색..." 
-          class="w-64 px-4 py-2 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="navbar-search-input"
         />
-        <span class="absolute right-3 top-2.5 text-gray-500 dark:text-gray-400" aria-hidden="true">🔍</span>
+        <svg class="navbar-search-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
       </div>
-    </div>
-    
-    <!-- 오른쪽: 알림 및 사용자 메뉴 -->
-    <div class="flex items-center space-x-4">
-      <!-- 다크모드 토글 -->
-      <button 
-        type="button"
-        class="p-2 rounded-full text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-        on:click={toggleDarkMode}
-        aria-label="{$appStore.darkMode ? '라이트 모드로 전환' : '다크 모드로 전환'}"
-      >
-        <span aria-hidden="true">
-          {#if $appStore.darkMode}
-            ☀️
-          {:else}
-            🌙
-          {/if}
-        </span>
-      </button>
       
       <!-- 알림 -->
-      <div class="relative">
+      <div class="navbar-notification">
         <button 
           type="button"
           id="notification-button"
-          class="p-2 rounded-full text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 relative"
+          class="navbar-icon-button"
           on:click={() => showNotifications = !showNotifications}
           aria-haspopup="true"
           aria-expanded={showNotifications}
           aria-label="알림 {unreadCount > 0 ? `${unreadCount}개 읽지 않음` : ''}"
         >
-          <span aria-hidden="true">🔔</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
           {#if unreadCount > 0}
-            <span class="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center" aria-hidden="true">
-              {unreadCount}
-            </span>
+            <span class="navbar-notification-badge">{unreadCount}</span>
           {/if}
         </button>
         
@@ -145,16 +153,16 @@
         {#if showNotifications}
           <div 
             id="notification-menu"
-            class="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 border dark:border-gray-700"
+            class="navbar-dropdown"
             role="menu"
             aria-labelledby="notification-button"
           >
-            <div class="p-3 border-b dark:border-gray-700 flex justify-between items-center">
-              <h3 class="font-medium text-gray-800 dark:text-gray-200">알림</h3>
+            <div class="navbar-dropdown-header">
+              <h3 class="navbar-dropdown-title">알림</h3>
               {#if unreadCount > 0}
                 <button 
                   type="button"
-                  class="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                  class="navbar-dropdown-action"
                   on:click={markAllAsRead}
                 >
                   모두 읽음 표시
@@ -162,27 +170,27 @@
               {/if}
             </div>
             
-            <div class="max-h-96 overflow-y-auto">
+            <div class="navbar-dropdown-content">
               {#if notifications.length === 0}
-                <div class="p-4 text-center text-gray-500 dark:text-gray-400">
+                <div class="navbar-dropdown-empty">
                   알림이 없습니다.
                 </div>
               {:else}
-                <ul role="menu">
+                <ul role="menu" class="navbar-notification-list">
                   {#each notifications as notification}
                     <li role="menuitem">
                       <button 
                         type="button"
-                        class="w-full text-left p-3 border-b dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700 {notification.read ? '' : 'bg-blue-50 dark:bg-blue-900/20'}"
+                        class="navbar-notification-item {notification.read ? '' : 'unread'}"
                         on:click={() => markAsRead(notification.id)}
                         on:keydown={(e) => handleNotificationKeyDown(e, notification.id)}
                         tabindex="0"
                       >
-                        <div class="flex justify-between">
-                          <h4 class="font-medium text-gray-800 dark:text-gray-200">{notification.title}</h4>
-                          <span class="text-xs text-gray-500 dark:text-gray-400">{notification.time}</span>
+                        <div class="navbar-notification-header">
+                          <h4 class="navbar-notification-title">{notification.title}</h4>
+                          <span class="navbar-notification-time">{notification.time}</span>
                         </div>
-                        <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">{notification.message}</p>
+                        <p class="navbar-notification-message">{notification.message}</p>
                       </button>
                     </li>
                   {/each}
@@ -190,8 +198,8 @@
               {/if}
             </div>
             
-            <div class="p-2 border-t dark:border-gray-700 text-center">
-              <a href="/notifications" class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+            <div class="navbar-dropdown-footer">
+              <a href="/notifications" class="navbar-dropdown-link">
                 모든 알림 보기
               </a>
             </div>
@@ -199,75 +207,283 @@
         {/if}
       </div>
       
-      <!-- 사용자 메뉴 -->
-      <div class="relative">
-        <button 
-          type="button"
-          id="user-menu-button"
-          class="flex items-center space-x-2 focus:outline-none"
-          on:click={() => showUserMenu = !showUserMenu}
-          aria-haspopup="true"
-          aria-expanded={showUserMenu}
-          aria-label="사용자 메뉴"
-        >
-          <div class="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-gray-700 dark:text-gray-300" aria-hidden="true">
-            {#if user?.name}
-              {user.name.charAt(0).toUpperCase()}
-            {:else if user?.email}
-              {user.email.charAt(0).toUpperCase()}
-            {:else}
-              U
-            {/if}
-          </div>
-          <span class="hidden md:block text-gray-800 dark:text-gray-200">
-            {user?.name || user?.email || '사용자'}
-          </span>
-        </button>
-        
-        <!-- 사용자 메뉴 -->
-        {#if showUserMenu}
-          <div 
-            id="user-menu"
-            class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 border dark:border-gray-700"
-            role="menu"
-            aria-labelledby="user-menu-button"
-          >
-            <div class="p-3 border-b dark:border-gray-700">
-              <p class="font-medium text-gray-800 dark:text-gray-200">
-                {user?.name || '사용자'}
-              </p>
-              <p class="text-sm text-gray-500 dark:text-gray-400">
-                {user?.email || ''}
-              </p>
-            </div>
-            
-            <div class="py-1">
-              <a 
-                href="/profile" 
-                class="block px-4 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                role="menuitem"
-              >
-                프로필
-              </a>
-              <a 
-                href="/settings" 
-                class="block px-4 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                role="menuitem"
-              >
-                설정
-              </a>
-              <button 
-                type="button"
-                on:click={() => authStore.logout()}
-                class="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                role="menuitem"
-              >
-                로그아웃
-              </button>
-            </div>
-          </div>
+      <!-- 설정 아이콘 -->
+      <button 
+        type="button"
+        class="navbar-icon-button"
+        on:click={toggleDarkMode}
+        aria-label="{$appStore.darkMode ? '라이트 모드로 전환' : '다크 모드로 전환'}"
+      >
+        {#if $appStore.darkMode}
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+        {:else}
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
         {/if}
-      </div>
+      </button>
     </div>
   </div>
-</header> 
+</header>
+
+<style>
+  .navbar {
+    background-color: var(--color-content-bg);
+    border-bottom: 1px solid var(--color-border);
+  }
+  
+  .navbar-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+  }
+  
+  .navbar-left {
+    display: flex;
+    align-items: center;
+  }
+  
+  .navbar-menu-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    color: var(--color-text-primary);
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+  
+  @media (min-width: 768px) {
+    .navbar-menu-button {
+      display: none;
+    }
+  }
+  
+  .navbar-title {
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+  }
+  
+  .navbar-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .navbar-search {
+    position: relative;
+    display: none;
+  }
+  
+  @media (min-width: 768px) {
+    .navbar-search {
+      display: block;
+    }
+  }
+  
+  .navbar-search-input {
+    width: 16rem;
+    padding: 0.5rem 2.5rem 0.5rem 1rem;
+    border-radius: 9999px;
+    background-color: var(--color-main-bg);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border);
+    outline: none;
+    transition: all 0.2s;
+  }
+  
+  .navbar-search-input:focus {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  }
+  
+  .navbar-search-icon {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-text-secondary);
+    pointer-events: none;
+  }
+  
+  .navbar-notification {
+    position: relative;
+  }
+  
+  .navbar-icon-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 9999px;
+    color: var(--color-text-primary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    position: relative;
+  }
+  
+  .navbar-icon-button:hover {
+    background-color: var(--color-main-bg);
+  }
+  
+  .navbar-notification-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 1rem;
+    height: 1rem;
+    background-color: #ef4444;
+    color: white;
+    font-size: 0.75rem;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .navbar-dropdown {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 0.5rem;
+    width: 20rem;
+    background-color: var(--color-content-bg);
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px var(--color-shadow), 0 2px 4px -1px var(--color-shadow);
+    border: 1px solid var(--color-border);
+    overflow: hidden;
+    z-index: 50;
+  }
+  
+  .navbar-dropdown-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--color-border);
+    background-color: var(--color-main-bg);
+  }
+  
+  .navbar-dropdown-title {
+    font-weight: 500;
+    color: var(--color-text-primary);
+  }
+  
+  .navbar-dropdown-action {
+    font-size: 0.875rem;
+    color: var(--color-accent);
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .navbar-dropdown-action:hover {
+    text-decoration: underline;
+  }
+  
+  .navbar-dropdown-content {
+    max-height: 24rem;
+    overflow-y: auto;
+  }
+  
+  .navbar-dropdown-empty {
+    padding: 1rem;
+    text-align: center;
+    color: var(--color-text-secondary);
+  }
+  
+  .navbar-notification-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .navbar-notification-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--color-border);
+    background: none;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .navbar-notification-item:hover {
+    background-color: var(--color-main-bg);
+  }
+  
+  .navbar-notification-item.unread {
+    background-color: rgba(59, 130, 246, 0.1);
+  }
+  
+  .navbar-notification-header {
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .navbar-notification-title {
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin: 0;
+  }
+  
+  .navbar-notification-time {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+  }
+  
+  .navbar-notification-message {
+    font-size: 0.875rem;
+    color: var(--color-text-primary);
+    margin: 0.25rem 0 0 0;
+  }
+  
+  .navbar-dropdown-footer {
+    padding: 0.5rem;
+    text-align: center;
+    border-top: 1px solid var(--color-border);
+    background-color: var(--color-main-bg);
+  }
+  
+  .navbar-dropdown-link {
+    font-size: 0.875rem;
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+  
+  .navbar-dropdown-link:hover {
+    text-decoration: underline;
+  }
+  
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+</style> 

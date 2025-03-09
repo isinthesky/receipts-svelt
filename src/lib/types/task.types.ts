@@ -12,7 +12,7 @@ export interface Task extends BaseEntity {
   taskName: string;
   description: string | null;
   dueDate: string | null;
-  receipts: Record<string, unknown>[] | null;
+  images: Record<string, unknown>[] | null;
 }
 
 // 태스크 생성 시 필요한 데이터 타입

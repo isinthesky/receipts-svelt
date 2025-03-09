@@ -1,87 +1,231 @@
 <script lang="ts">
   import { authStore } from '$lib/stores/auth';
+  import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
+  import { taskStore } from '$lib/stores/tasks';
+  import { imageStore } from '$lib/stores/images';
+  import type { Task } from '$lib/types/task.types';
+  
+  // 컴포넌트 임포트
+  import WelcomeSection from '$lib/components/ui/WelcomeSection.svelte';
+  import StatCard from '$lib/components/ui/StatCard.svelte';
+  import TaskTable from '$lib/components/ui/TaskTable.svelte';
+  import ImageGrid from '$lib/components/ui/ImageGrid.svelte';
+  import Loading from '$lib/components/ui/Loading.svelte';
+  
+  // 상태 관리
+  let loading = true;
+  let error: string | null = null;
+  let stats = {
+    totalTasks: 0,
+    processedImages: 0,
+    recognizedReceipts: 0,
+    totalAmount: 0
+  };
+  let recentTasks: Task[] = [];
+  let recentImages: Array<{
+    id: string;
+    thumbnailPath: string;
+    fileName: string;
+  }> = [];
+  
+  // 데이터 로드 함수
+  async function loadDashboardData() {
+    loading = true;
+    error = null;
+    
+    try {
+      // 태스크 데이터 로드
+      await taskStore.loadTasks();
+      recentTasks = $taskStore.tasks.slice(0, 4);
+      stats.totalTasks = $taskStore.tasks.length;
+      
+      // 이미지 데이터 로드 (예시)
+      // 실제로는 API에서 통계 데이터를 가져와야 함
+      stats.processedImages = 156;
+      stats.recognizedReceipts = 87;
+      stats.totalAmount = 487250;
+      
+      // 최근 이미지 (예시)
+      recentImages = [
+        { id: '1', thumbnailPath: '', fileName: '영수증1.jpg' },
+        { id: '2', thumbnailPath: '', fileName: '영수증2.jpg' },
+        { id: '3', thumbnailPath: '', fileName: '영수증3.jpg' },
+        { id: '4', thumbnailPath: '', fileName: '영수증4.jpg' }
+      ];
+    } catch (err) {
+      error = err instanceof Error ? err.message : '데이터를 불러오는데 실패했습니다.';
+    } finally {
+      loading = false;
+    }
+  }
+  
+  // 태스크 상세 페이지로 이동
+  function goToTaskDetail(taskId: string) {
+    goto(`/tasks/${taskId}`);
+  }
+  
+  // 이미지 상세 페이지로 이동
+  function goToImageDetail(imageId: string) {
+    goto(`/images/${imageId}`);
+  }
+  
+  // 상태 텍스트 반환 함수
+  function getStatusText(status: number): string {
+    switch (status) {
+      case 0: return '비활성화';
+      case 1: return '활성화';
+      case 2: return '숨김';
+      case 3: return '진행중';
+      case 4: return '완료';
+      case 5: return '검토중';
+      case 6: return '지연';
+      default: return '알 수 없음';
+    }
+  }
+  
+  // 상태 클래스 반환 함수
+  function getStatusClass(status: number): string {
+    switch (status) {
+      case 0: return 'status-disabled';
+      case 1: return 'status-active';
+      case 2: return 'status-hidden';
+      case 3: return 'status-processing';
+      case 4: return 'status-completed';
+      case 5: return 'status-reviewing';
+      case 6: return 'status-delayed';
+      default: return '';
+    }
+  }
+  
+  // 날짜 포맷팅 함수
+  function formatDate(dateString: string | null): string {
+    if (!dateString) return '-';
+    
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('ko-KR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (err) {
+      return dateString;
+    }
+  }
+  
+  // 금액 포맷팅 함수
+  function formatAmount(amount: number): string {
+    return new Intl.NumberFormat('ko-KR', {
+      style: 'currency',
+      currency: 'KRW'
+    }).format(amount);
+  }
+  
+  // 컴포넌트 마운트 시 데이터 로드
+  onMount(() => {
+    loadDashboardData();
+  });
 </script>
 
-<div class="min-h-screen bg-gray-100 dark:bg-gray-900">
-  <div class="py-10">
-    <header>
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 class="text-3xl font-bold leading-tight text-gray-900 dark:text-white">
-          대시보드
-        </h1>
-      </div>
-    </header>
-    <main>
-      <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-        <div class="px-4 py-8 sm:px-0">
-          <div class="border-4 border-dashed border-gray-200 dark:border-gray-700 rounded-lg p-6">
-            {#if $authStore.loading}
-              <div class="flex justify-center items-center h-32">
-                <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-                <span class="ml-2 text-gray-600 dark:text-gray-400">로딩 중...</span>
-              </div>
-            {:else if $authStore.user}
-              <div class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
-                <div class="px-4 py-5 sm:px-6">
-                  <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">
-                    사용자 정보
-                  </h3>
-                  <p class="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
-                    로그인한 사용자의 기본 정보입니다.
-                  </p>
-                </div>
-                <div class="border-t border-gray-200 dark:border-gray-700">
-                  <dl>
-                    <div class="bg-gray-50 dark:bg-gray-900 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        이름
-                      </dt>
-                      <dd class="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                        {$authStore.user.name || '이름 없음'}
-                      </dd>
-                    </div>
-                    <div class="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        이메일
-                      </dt>
-                      <dd class="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                        {$authStore.user.email}
-                      </dd>
-                    </div>
-                    <div class="bg-gray-50 dark:bg-gray-900 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        ID
-                      </dt>
-                      <dd class="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                        {$authStore.user.id}
-                      </dd>
-                    </div>
-                  </dl>
-                </div>
-              </div>
-              
-              <div class="mt-6 flex justify-end">
-                <button
-                  on:click={() => authStore.logout()}
-                  class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                >
-                  로그아웃
-                </button>
-              </div>
-            {:else}
-              <div class="text-center py-10">
-                <p class="text-red-500">사용자 정보를 불러올 수 없습니다.</p>
-                <button
-                  on:click={() => authStore.logout()}
-                  class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  로그인 페이지로 이동
-                </button>
-              </div>
-            {/if}
-          </div>
-        </div>
-      </div>
-    </main>
-  </div>
-</div> 
+<div class="dashboard-container">
+  <WelcomeSection username={$authStore.user?.name || '사용자'} />
+  
+  {#if loading}
+    <Loading text="데이터를 불러오는 중..." />
+  {:else if error}
+    <div class="error-container">
+      <p>{error}</p>
+      <button class="retry-button" on:click={loadDashboardData}>다시 시도</button>
+    </div>
+  {:else}
+    <!-- 통계 카드 섹션 -->
+    <div class="stats-grid">
+      <StatCard 
+        title="총 태스크" 
+        value={stats.totalTasks} 
+        change="12% 증가" 
+        isIncrease={true} 
+      />
+      
+      <StatCard 
+        title="처리된 이미지" 
+        value={stats.processedImages} 
+        change="8% 증가" 
+        isIncrease={true} 
+      />
+      
+      <StatCard 
+        title="인식된 영수증" 
+        value={stats.recognizedReceipts} 
+        change="15% 증가" 
+        isIncrease={true} 
+      />
+      
+      <StatCard 
+        title="총 금액" 
+        value={formatAmount(stats.totalAmount)} 
+        change="5% 감소" 
+        isIncrease={false} 
+      />
+    </div>
+    
+    <div class="content-grid">
+      <TaskTable tasks={recentTasks} onViewTask={goToTaskDetail} />
+      <ImageGrid images={recentImages} onImageClick={goToImageDetail} />
+    </div>
+  {/if}
+</div>
+
+<style>
+  .dashboard-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+  
+  .error-container {
+    padding: 24px;
+    text-align: center;
+    background-color: #fee2e2;
+    color: #b91c1c;
+    border-radius: 8px;
+    margin-bottom: 24px;
+  }
+  
+  .retry-button {
+    margin-top: 12px;
+    padding: 8px 16px;
+    background-color: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  
+  .retry-button:hover {
+    background-color: #dc2626;
+  }
+  
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  
+  .content-grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 16px;
+  }
+  
+  @media (max-width: 768px) {
+    .content-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style> 

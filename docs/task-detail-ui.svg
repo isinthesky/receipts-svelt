@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <!-- 배경 -->
+  <rect width="800" height="600" fill="#f9fafb" />
+  
+  <!-- 헤더 영역 -->
+  <rect x="0" y="0" width="800" height="60" fill="#1e293b" />
+  <text x="20" y="35" font-family="Arial" font-size="18" fill="white">영수증 처리 시스템</text>
+  <circle cx="760" cy="30" r="20" fill="#475569" />
+  <text x="760" y="35" font-family="Arial" font-size="14" fill="white" text-anchor="middle">사용자</text>
+  
+  <!-- 사이드바 -->
+  <rect x="0" y="60" width="200" height="540" fill="#334155" />
+  <rect x="10" y="100" width="180" height="40" rx="5" fill="#475569" />
+  <text x="30" y="125" font-family="Arial" font-size="14" fill="white">태스크</text>
+  <rect x="10" y="150" width="180" height="40" rx="5" fill="#334155" />
+  <text x="30" y="175" font-family="Arial" font-size="14" fill="white">이미지</text>
+  <rect x="10" y="200" width="180" height="40" rx="5" fill="#334155" />
+  <text x="30" y="225" font-family="Arial" font-size="14" fill="white">영수증</text>
+  
+  <!-- 메인 컨텐츠 영역 -->
+  <rect x="200" y="60" width="600" height="540" fill="#f9fafb" />
+  
+  <!-- 태스크 정보 영역 -->
+  <rect x="220" y="80" width="560" height="120" rx="5" fill="white" stroke="#e2e8f0" />
+  <text x="240" y="110" font-family="Arial" font-size="20" font-weight="bold" fill="#1e293b">월간 경비 영수증 처리</text>
+  <text x="240" y="140" font-family="Arial" font-size="14" fill="#64748b">설명: 7월 회사 경비 영수증 처리를 위한 태스크입니다.</text>
+  <text x="240" y="165" font-family="Arial" font-size="14" fill="#64748b">마감일: 2023-08-15</text>
+  <rect x="650" y="90" width="100" height="30" rx="5" fill="#3b82f6" />
+  <text x="700" y="110" font-family="Arial" font-size="14" fill="white" text-anchor="middle">편집</text>
+  
+  <!-- 이미지 목록 제목 및 필터 영역 -->
+  <text x="220" y="230" font-family="Arial" font-size="18" font-weight="bold" fill="#1e293b">이미지 목록 (8)</text>
+  <rect x="400" y="210" width="120" height="30" rx="5" fill="#e2e8f0" />
+  <text x="460" y="230" font-family="Arial" font-size="14" fill="#1e293b" text-anchor="middle">필터</text>
+  <rect x="530" y="210" width="120" height="30" rx="5" fill="#e2e8f0" />
+  <text x="590" y="230" font-family="Arial" font-size="14" fill="#1e293b" text-anchor="middle">정렬</text>
+  <rect x="660" y="210" width="120" height="30" rx="5" fill="#3b82f6" />
+  <text x="720" y="230" font-family="Arial" font-size="14" fill="white" text-anchor="middle">이미지 추가</text>
+  
+  <!-- 이미지 그리드 -->
+  <!-- 첫 번째 줄 -->
+  <rect x="220" y="250" width="170" height="150" rx="5" fill="white" stroke="#e2e8f0" />
+  <rect x="230" y="260" width="150" height="100" fill="#dbeafe" />
+  <text x="305" y="310" font-family="Arial" font-size="14" fill="#1e293b" text-anchor="middle">이미지 1</text>
+  <text x="240" y="380" font-family="Arial" font-size="12" fill="#64748b">영수증: 2개</text>
+  
+  <rect x="410" y="250" width="170" height="150" rx="5" fill="white" stroke="#e2e8f0" />
+  <rect x="420" y="260" width="150" height="100" fill="#dbeafe" />
+  <text x="495" y="310" font-family="Arial" font-size="14" fill="#1e293b" text-anchor="middle">이미지 2</text>
+  <text x="430" y="380" font-family="Arial" font-size="12" fill="#64748b">영수증: 1개</text>
+  
+  <rect x="600" y="250" width="170" height="150" rx="5" fill="white" stroke="#e2e8f0" />
+  <rect x="610" y="260" width="150" height="100" fill="#dbeafe" />
+  <text x="685" y="310" font-family="Arial" font-size="14" fill="#1e293b" text-anchor="middle">이미지 3</text>
+  <text x="620" y="380" font-family="Arial" font-size="12" fill="#64748b">영수증: 0개</text>
+  
+  <!-- 두 번째 줄 -->
+  <rect x="220" y="420" width="170" height="150" rx="5" fill="white" stroke="#e2e8f0" />
+  <rect x="230" y="430" width="150" height="100" fill="#dbeafe" />
+  <text x="305" y="480" font-family="Arial" font-size="14" fill="#1e293b" text-anchor="middle">이미지 4</text>
+  <text x="240" y="550" font-family="Arial" font-size="12" fill="#64748b">영수증: 1개</text>
+  
+  <rect x="410" y="420" width="170" height="150" rx="5" fill="white" stroke="#e2e8f0" />
+  <rect x="420" y="430" width="150" height="100" fill="#dbeafe" />
+  <text x="495" y="480" font-family="Arial" font-size="14" fill="#1e293b" text-anchor="middle">이미지 5</text>
+  <text x="430" y="550" font-family="Arial" font-size="12" fill="#64748b">영수증: 3개</text>
+  
+  <rect x="600" y="420" width="170" height="150" rx="5" fill="white" stroke="#e2e8f0" />
+  <rect x="610" y="430" width="150" height="100" fill="#dbeafe" />
+  <text x="685" y="480" font-family="Arial" font-size="14" fill="#1e293b" text-anchor="middle">이미지 6</text>
+  <text x="620" y="550" font-family="Arial" font-size="12" fill="#64748b">영수증: 1개</text>
+</svg>

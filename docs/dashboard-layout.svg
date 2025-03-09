@@ -1,0 +1,193 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
+  <!-- 배경 -->
+  <rect width="1200" height="800" fill="#f5f7fa" />
+  
+  <!-- 사이드바 -->
+  <g>
+    <rect x="0" y="0" width="250" height="800" fill="#2c3e50" />
+    <text x="125" y="40" font-family="Arial" font-size="20" fill="white" text-anchor="middle">로고</text>
+    
+    <!-- 내비게이션 메뉴 -->
+    <g fill="white" font-family="Arial" font-size="16">
+      <rect x="20" y="80" width="210" height="50" rx="5" fill="#3498db" opacity="0.6" />
+      <text x="60" y="110">대시보드</text>
+      <circle cx="35" cy="105" r="8" />
+      
+      <rect x="20" y="140" width="210" height="50" rx="5" fill="transparent" />
+      <text x="60" y="170">태스크 관리</text>
+      <circle cx="35" cy="165" r="8" />
+      
+      <rect x="20" y="200" width="210" height="50" rx="5" fill="transparent" />
+      <text x="60" y="230">이미지 관리</text>
+      <circle cx="35" cy="225" r="8" />
+      
+      <rect x="20" y="260" width="210" height="50" rx="5" fill="transparent" />
+      <text x="60" y="290">영수증 관리</text>
+      <circle cx="35" cy="285" r="8" />
+      
+      <rect x="20" y="320" width="210" height="50" rx="5" fill="transparent" />
+      <text x="60" y="350">설정</text>
+      <circle cx="35" cy="345" r="8" />
+    </g>
+    
+    <!-- 사용자 정보 -->
+    <g>
+      <circle cx="45" cy="700" r="25" fill="#bdc3c7" />
+      <text x="85" y="705" font-family="Arial" font-size="16" fill="white">사용자 이름</text>
+      <text x="45" y="745" font-family="Arial" font-size="14" fill="#95a5a6" text-anchor="middle">로그아웃</text>
+    </g>
+  </g>
+  
+  <!-- 헤더 -->
+  <g>
+    <rect x="250" y="0" width="950" height="70" fill="white" stroke="#e0e6ed" stroke-width="1" />
+    <text x="290" y="40" font-family="Arial" font-size="24" fill="#2c3e50">대시보드</text>
+    
+    <!-- 검색바 -->
+    <rect x="700" y="20" width="250" height="30" rx="15" fill="#f5f7fa" stroke="#e0e6ed" stroke-width="1" />
+    <text x="720" y="40" font-family="Arial" font-size="14" fill="#95a5a6">검색...</text>
+    
+    <!-- 알림 아이콘 -->
+    <circle cx="1000" cy="35" r="15" fill="#f5f7fa" />
+    <text x="1000" y="40" font-family="Arial" font-size="14" fill="#2c3e50" text-anchor="middle">🔔</text>
+    
+    <!-- 설정 아이콘 -->
+    <circle cx="1050" cy="35" r="15" fill="#f5f7fa" />
+    <text x="1050" y="40" font-family="Arial" font-size="14" fill="#2c3e50" text-anchor="middle">⚙️</text>
+  </g>
+  
+  <!-- 대시보드 컨텐츠 -->
+  <g>
+    <!-- 환영 메시지 -->
+    <text x="290" y="110" font-family="Arial" font-size="20" fill="#2c3e50">안녕하세요, 사용자님!</text>
+    <text x="290" y="140" font-family="Arial" font-size="16" fill="#7f8c8d">오늘의 대시보드 요약입니다.</text>
+    
+    <!-- 통계 카드 섹션 -->
+    <g>
+      <!-- 카드 1 -->
+      <rect x="290" y="170" width="210" height="130" rx="8" fill="white" stroke="#e0e6ed" stroke-width="1" />
+      <text x="310" y="200" font-family="Arial" font-size="14" fill="#7f8c8d">총 태스크</text>
+      <text x="310" y="240" font-family="Arial" font-size="32" fill="#2c3e50">24</text>
+      <text x="310" y="270" font-family="Arial" font-size="14" fill="#27ae60">↑ 12% 증가</text>
+      
+      <!-- 카드 2 -->
+      <rect x="520" y="170" width="210" height="130" rx="8" fill="white" stroke="#e0e6ed" stroke-width="1" />
+      <text x="540" y="200" font-family="Arial" font-size="14" fill="#7f8c8d">처리된 이미지</text>
+      <text x="540" y="240" font-family="Arial" font-size="32" fill="#2c3e50">156</text>
+      <text x="540" y="270" font-family="Arial" font-size="14" fill="#27ae60">↑ 8% 증가</text>
+      
+      <!-- 카드 3 -->
+      <rect x="750" y="170" width="210" height="130" rx="8" fill="white" stroke="#e0e6ed" stroke-width="1" />
+      <text x="770" y="200" font-family="Arial" font-size="14" fill="#7f8c8d">인식된 영수증</text>
+      <text x="770" y="240" font-family="Arial" font-size="32" fill="#2c3e50">87</text>
+      <text x="770" y="270" font-family="Arial" font-size="14" fill="#27ae60">↑ 15% 증가</text>
+      
+      <!-- 카드 4 -->
+      <rect x="980" y="170" width="210" height="130" rx="8" fill="white" stroke="#e0e6ed" stroke-width="1" />
+      <text x="1000" y="200" font-family="Arial" font-size="14" fill="#7f8c8d">총 금액</text>
+      <text x="1000" y="240" font-family="Arial" font-size="32" fill="#2c3e50">₩487,250</text>
+      <text x="1000" y="270" font-family="Arial" font-size="14" fill="#e74c3c">↓ 5% 감소</text>
+    </g>
+    
+    <!-- 최근 태스크 섹션 -->
+    <g>
+      <rect x="290" y="330" width="560" height="450" rx="8" fill="white" stroke="#e0e6ed" stroke-width="1" />
+      <text x="320" y="370" font-family="Arial" font-size="18" fill="#2c3e50">최근 태스크</text>
+      <text x="780" y="370" font-family="Arial" font-size="14" fill="#3498db" text-anchor="end">모두 보기</text>
+      
+      <!-- 태스크 테이블 헤더 -->
+      <line x1="320" y1="390" x2="820" y2="390" stroke="#e0e6ed" stroke-width="1" />
+      <text x="330" y="410" font-family="Arial" font-size="14" fill="#7f8c8d">이름</text>
+      <text x="480" y="410" font-family="Arial" font-size="14" fill="#7f8c8d">날짜</text>
+      <text x="600" y="410" font-family="Arial" font-size="14" fill="#7f8c8d">상태</text>
+      <text x="720" y="410" font-family="Arial" font-size="14" fill="#7f8c8d">작업</text>
+      
+      <!-- 태스크 항목 1 -->
+      <line x1="320" y1="430" x2="820" y2="430" stroke="#e0e6ed" stroke-width="1" />
+      <text x="330" y="455" font-family="Arial" font-size="14" fill="#2c3e50">3월 영수증 처리</text>
+      <text x="480" y="455" font-family="Arial" font-size="14" fill="#7f8c8d">2025-03-05</text>
+      <rect x="600" y="440" width="70" height="24" rx="12" fill="#e1f5fe" />
+      <text x="635" y="455" font-family="Arial" font-size="12" fill="#0288d1" text-anchor="middle">진행중</text>
+      <text x="720" y="455" font-family="Arial" font-size="14" fill="#3498db">보기</text>
+      
+      <!-- 태스크 항목 2 -->
+      <line x1="320" y1="475" x2="820" y2="475" stroke="#e0e6ed" stroke-width="1" />
+      <text x="330" y="500" font-family="Arial" font-size="14" fill="#2c3e50">2월 회계 정리</text>
+      <text x="480" y="500" font-family="Arial" font-size="14" fill="#7f8c8d">2025-02-28</text>
+      <rect x="600" y="485" width="70" height="24" rx="12" fill="#e8f5e9" />
+      <text x="635" y="500" font-family="Arial" font-size="12" fill="#388e3c" text-anchor="middle">완료</text>
+      <text x="720" y="500" font-family="Arial" font-size="14" fill="#3498db">보기</text>
+      
+      <!-- 태스크 항목 3 -->
+      <line x1="320" y1="520" x2="820" y2="520" stroke="#e0e6ed" stroke-width="1" />
+      <text x="330" y="545" font-family="Arial" font-size="14" fill="#2c3e50">식대 영수증 정리</text>
+      <text x="480" y="545" font-family="Arial" font-size="14" fill="#7f8c8d">2025-03-02</text>
+      <rect x="600" y="530" width="70" height="24" rx="12" fill="#fff8e1" />
+      <text x="635" y="545" font-family="Arial" font-size="12" fill="#ffa000" text-anchor="middle">검토중</text>
+      <text x="720" y="545" font-family="Arial" font-size="14" fill="#3498db">보기</text>
+      
+      <!-- 태스크 항목 4 -->
+      <line x1="320" y1="565" x2="820" y2="565" stroke="#e0e6ed" stroke-width="1" />
+      <text x="330" y="590" font-family="Arial" font-size="14" fill="#2c3e50">출장 경비 처리</text>
+      <text x="480" y="590" font-family="Arial" font-size="14" fill="#7f8c8d">2025-03-07</text>
+      <rect x="600" y="575" width="70" height="24" rx="12" fill="#ffebee" />
+      <text x="635" y="590" font-family="Arial" font-size="12" fill="#d32f2f" text-anchor="middle">지연</text>
+      <text x="720" y="590" font-family="Arial" font-size="14" fill="#3498db">보기</text>
+    </g>
+    
+    <!-- 최근 이미지 섹션 -->
+    <g>
+      <rect x="870" y="330" width="320" height="450" rx="8" fill="white" stroke="#e0e6ed" stroke-width="1" />
+      <text x="900" y="370" font-family="Arial" font-size="18" fill="#2c3e50">최근 이미지</text>
+      <text x="1160" y="370" font-family="Arial" font-size="14" fill="#3498db" text-anchor="end">모두 보기</text>
+      
+      <!-- 이미지 그리드 -->
+      <g>
+        <!-- 첫 번째 행 -->
+        <rect x="900" y="400" width="120" height="120" rx="5" fill="#e0e6ed" />
+        <text x="960" y="460" font-family="Arial" font-size="36" fill="#95a5a6" text-anchor="middle">🧾</text>
+        
+        <rect x="1040" y="400" width="120" height="120" rx="5" fill="#e0e6ed" />
+        <text x="1100" y="460" font-family="Arial" font-size="36" fill="#95a5a6" text-anchor="middle">🧾</text>
+        
+        <!-- 두 번째 행 -->
+        <rect x="900" y="540" width="120" height="120" rx="5" fill="#e0e6ed" />
+        <text x="960" y="600" font-family="Arial" font-size="36" fill="#95a5a6" text-anchor="middle">🧾</text>
+        
+        <rect x="1040" y="540" width="120" height="120" rx="5" fill="#e0e6ed" />
+        <text x="1100" y="600" font-family="Arial" font-size="36" fill="#95a5a6" text-anchor="middle">🧾</text>
+      </g>
+    </g>
+  </g>
+  
+  <!-- 디자인 요소 레이블 -->
+  <g font-family="Arial" font-size="11" fill="#e74c3c">
+    <text x="5" y="20">사이드바 영역</text>
+    <line x1="65" y1="18" x2="120" y2="18" stroke="#e74c3c" stroke-width="1" />
+    
+    <text x="255" y="20">헤더 영역</text>
+    <line x1="305" y1="18" x2="400" y2="18" stroke="#e74c3c" stroke-width="1" />
+    
+    <text x="290" y="165">통계 카드 섹션</text>
+    <line x1="360" y1="163" x2="450" y2="163" stroke="#e74c3c" stroke-width="1" />
+    
+    <text x="290" y="325">태스크 섹션</text>
+    <line x1="345" y1="323" x2="400" y2="323" stroke="#e74c3c" stroke-width="1" />
+    
+    <text x="870" y="325">이미지 섹션</text>
+    <line x1="925" y1="323" x2="980" y2="323" stroke="#e74c3c" stroke-width="1" />
+  </g>
+  
+  <!-- 레이아웃 그리드 표시 -->
+  <g stroke="#3498db" stroke-width="1" stroke-dasharray="5,5" opacity="0.3">
+    <!-- 수직 그리드 -->
+    <line x1="250" y1="0" x2="250" y2="800" />
+    <line x1="600" y1="0" x2="600" y2="800" />
+    <line x1="870" y1="330" x2="870" y2="780" />
+    
+    <!-- 수평 그리드 -->
+    <line x1="250" y1="70" x2="1200" y2="70" />
+    <line x1="250" y1="170" x2="1200" y2="170" />
+    <line x1="250" y1="300" x2="1200" y2="300" />
+  </g>
+</svg>
