@@ -7,9 +7,10 @@
   import AuthCard from '$lib/components/ui/styles/AuthCard.svelte';
   import Form from '$lib/components/ui/styles/Form.svelte';
   import FormGroup from '$lib/components/ui/styles/FormGroup.svelte';
-  import Input from '$lib/components/ui/styles/Input.svelte';
-  import Button from '$lib/components/ui/styles/Button.svelte';
-  import ErrorMessage from '$lib/components/ui/styles/ErrorMessage.svelte';
+  import Input from '$lib/components/ui/Input.svelte';
+  import Button from '$lib/components/ui/Button.svelte';
+  import Alert from '$lib/components/ui/Alert.svelte';
+  import Loading from '$lib/components/ui/Loading.svelte';
 
   // 폼 상태
   let name = '';
@@ -143,14 +144,11 @@
     </FormGroup>
     
     {#if formError}
-      <ErrorMessage message={formError} />
+      <Alert type="error" message={formError} />
     {/if}
     
     {#if $authStore.loading}
-      <div class="loading-container">
-        <div class="loading-spinner"></div>
-        <span class="loading-text">회원가입 중...</span>
-      </div>
+      <Loading text="회원가입 중..." />
     {/if}
     
     <Button
@@ -162,32 +160,4 @@
       회원가입
     </Button>
   </Form>
-</AuthCard>
-
-<style>
-  .loading-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 1rem;
-  }
-  
-  .loading-spinner {
-    width: 1.25rem;
-    height: 1.25rem;
-    border: 2px solid #e5e7eb;
-    border-top-color: #3b82f6;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-right: 0.5rem;
-  }
-  
-  .loading-text {
-    font-size: 0.875rem;
-    color: var(--color-text-secondary);
-  }
-  
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-</style> 
+</AuthCard> 

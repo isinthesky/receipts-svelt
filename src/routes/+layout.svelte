@@ -5,6 +5,7 @@
   import { authStore, isAuthenticated } from '$lib/stores/auth';
   import Sidebar from '$lib/components/layout/Sidebar.svelte';
   import Navbar from '$lib/components/layout/Navbar.svelte';
+  import Alert from '$lib/components/ui/Alert.svelte';
   import '../app.css';
 
   // 인증 상태 확인
@@ -73,22 +74,12 @@
 {#if $appStore.notifications.length > 0}
   <div class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-md">
     {#each $appStore.notifications as notification}
-      <div 
-        class="p-4 rounded-lg shadow-md flex items-center justify-between {
-          notification.type === 'info' ? 'bg-blue-100 text-blue-800' :
-          notification.type === 'success' ? 'bg-green-100 text-green-800' :
-          notification.type === 'warning' ? 'bg-yellow-100 text-yellow-800' :
-          'bg-red-100 text-red-800'
-        }"
-      >
-        <span>{notification.message}</span>
-        <button 
-          class="ml-4 text-slate-500 hover:text-slate-700"
-          on:click={() => appStore.removeNotification(notification.id)}
-        >
-          ✕
-        </button>
-      </div>
+      <Alert 
+        type={notification.type} 
+        message={notification.message} 
+        dismissible={true}
+        on:dismiss={() => appStore.removeNotification(notification.id)} 
+      />
     {/each}
   </div>
 {/if}
@@ -111,38 +102,4 @@
       <slot />
     </div>
   {/if}
-</div>
-
-<style>
-  :root {
-    --color-main-bg: #f8fafc;
-    --color-content-bg: #ffffff;
-    --color-text-primary: #334155;
-    --color-text-secondary: #64748b;
-    --color-accent: #3b82f6;
-    --color-border: #e2e8f0;
-    --color-shadow: rgba(0, 0, 0, 0.05);
-  }
-  
-  .app-container {
-    background-color: var(--color-main-bg);
-    color: var(--color-text-primary);
-    transition: background-color 0.3s ease, color 0.3s ease;
-  }
-  
-  .content-area {
-    background-color: var(--color-content-bg);
-    border-radius: 0.5rem;
-    box-shadow: 0 1px 3px var(--color-shadow);
-  }
-  
-  .dark-mode {
-    --color-main-bg: #0f172a;
-    --color-content-bg: #1e293b;
-    --color-text-primary: #f1f5f9;
-    --color-text-secondary: #cbd5e1;
-    --color-accent: #60a5fa;
-    --color-border: #334155;
-    --color-shadow: rgba(0, 0, 0, 0.2);
-  }
-</style> 
+</div> 

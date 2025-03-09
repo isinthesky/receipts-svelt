@@ -7,9 +7,11 @@
   import AuthCard from '$lib/components/ui/styles/AuthCard.svelte';
   import Form from '$lib/components/ui/styles/Form.svelte';
   import FormGroup from '$lib/components/ui/styles/FormGroup.svelte';
-  import Input from '$lib/components/ui/styles/Input.svelte';
-  import Button from '$lib/components/ui/styles/Button.svelte';
-  import ErrorMessage from '$lib/components/ui/styles/ErrorMessage.svelte';
+  import Input from '$lib/components/ui/Input.svelte';
+  import Button from '$lib/components/ui/Button.svelte';
+  import Alert from '$lib/components/ui/Alert.svelte';
+  import Loading from '$lib/components/ui/Loading.svelte';
+  import Checkbox from '$lib/components/ui/styles/Checkbox.svelte';
 
   // 폼 상태
   let username = '';
@@ -108,34 +110,25 @@
       />
     </FormGroup>
     
-    <div class="flex-row">
-      <div class="checkbox-container">
-        <input
-          id="remember-me"
-          name="remember-me"
-          type="checkbox"
-          bind:checked={rememberMe}
-          class="checkbox"
-        />
-        <label for="remember-me" class="checkbox-label">
-          로그인 상태 유지
-        </label>
-      </div>
+    <div class="flex justify-between items-center mb-4">
+      <Checkbox
+        id="remember-me"
+        name="remember-me"
+        label="로그인 상태 유지"
+        bind:checked={rememberMe}
+      />
       
-      <a href="/forgot-password" class="forgot-link">
+      <a href="/forgot-password" class="text-blue-500 hover:underline text-sm">
         비밀번호를 잊으셨나요?
       </a>
     </div>
     
     {#if formError}
-      <ErrorMessage message={formError} />
+      <Alert type="error" message={formError} />
     {/if}
     
     {#if $authStore.loading}
-      <div class="loading-container">
-        <div class="loading-spinner"></div>
-        <span class="loading-text">로그인 중...</span>
-      </div>
+      <Loading text="로그인 중..." />
     {/if}
     
     <Button
@@ -147,65 +140,4 @@
       로그인
     </Button>
   </Form>
-</AuthCard>
-
-<style>
-  .flex-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-  }
-  
-  .checkbox-container {
-    display: flex;
-    align-items: center;
-  }
-  
-  .checkbox {
-    width: 1rem;
-    height: 1rem;
-    margin-right: 0.5rem;
-  }
-  
-  .checkbox-label {
-    font-size: 0.875rem;
-    color: var(--color-text-secondary);
-  }
-  
-  .forgot-link {
-    font-size: 0.875rem;
-    color: #3b82f6;
-    text-decoration: none;
-  }
-  
-  .forgot-link:hover {
-    text-decoration: underline;
-  }
-  
-  .loading-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 1rem;
-  }
-  
-  .loading-spinner {
-    width: 1.25rem;
-    height: 1.25rem;
-    border: 2px solid #e5e7eb;
-    border-top-color: #3b82f6;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-right: 0.5rem;
-  }
-  
-  .loading-text {
-    font-size: 0.875rem;
-    color: var(--color-text-secondary);
-  }
-  
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-</style> 
+</AuthCard> 

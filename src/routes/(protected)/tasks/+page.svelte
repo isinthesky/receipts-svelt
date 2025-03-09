@@ -8,6 +8,9 @@
   import Button from '$lib/components/ui/Button.svelte';
   import Loading from '$lib/components/ui/Loading.svelte';
   import Alert from '$lib/components/ui/Alert.svelte';
+  import Input from '$lib/components/ui/Input.svelte';
+  import Container from '$lib/components/ui/styles/Container.svelte';
+  import Grid from '$lib/components/ui/styles/Grid.svelte';
 
   // 상태 관리
   let tasks: Task[] = [];
@@ -203,31 +206,28 @@
   });
 </script>
 
-<div class="container mx-auto px-4 py-8">
-  <div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold">태스크 목록</h1>
+<Container>
+  <div class="header-section">
+    <h1>태스크 목록</h1>
     <Button href="/tasks/new">새 태스크 생성</Button>
   </div>
 
   <!-- 검색 및 필터 -->
-  <div class="bg-white rounded-lg shadow p-4 mb-6">
-    <div class="flex flex-col md:flex-row gap-4">
-      <div class="flex-1">
-        <label for="search" class="block text-sm font-medium text-gray-700 mb-1">검색</label>
-        <input
-          type="text"
+  <Card>
+    <Grid>
+      <div>
+        <Input
           id="search"
+          label="검색"
           bind:value={searchQuery}
           placeholder="태스크 이름 또는 설명 검색..."
-          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
         />
       </div>
       <div>
-        <label for="stateFilter" class="block text-sm font-medium text-gray-700 mb-1">상태 필터</label>
+        <label for="stateFilter">상태 필터</label>
         <select
           id="stateFilter"
           bind:value={statusFilter}
-          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
         >
           <option value={null}>모든 상태</option>
           <option value={1}>활성화</option>
@@ -236,11 +236,10 @@
         </select>
       </div>
       <div>
-        <label for="sortBy" class="block text-sm font-medium text-gray-700 mb-1">정렬 기준</label>
+        <label for="sortBy">정렬 기준</label>
         <select
           id="sortBy"
           bind:value={sortBy}
-          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
         >
           <option value="createdAt">생성일</option>
           <option value="taskName">태스크명</option>
@@ -248,476 +247,130 @@
         </select>
       </div>
       <div>
-        <label for="sortOrder" class="block text-sm font-medium text-gray-700 mb-1">정렬 방향</label>
+        <label for="sortOrder">정렬 순서</label>
         <select
           id="sortOrder"
           bind:value={sortOrder}
-          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
         >
           <option value="desc">내림차순</option>
           <option value="asc">오름차순</option>
         </select>
       </div>
-    </div>
-  </div>
+      <div>
+        <label for="viewMode">보기 모드</label>
+        <select
+          id="viewMode"
+          bind:value={viewMode}
+        >
+          <option value="table">테이블</option>
+          <option value="card">카드</option>
+        </select>
+      </div>
+    </Grid>
+  </Card>
 
-  <!-- 로딩 상태 -->
-  {#if loading || $taskStore.loading}
-    <Loading />
-  <!-- 오류 상태 -->
-  {:else if $taskStore.error}
-    <Alert type="error" message={$taskStore.error} />
-  <!-- 데이터 없음 -->
+  {#if loading}
+    <Loading text="태스크를 불러오는 중..." />
+  {:else if error}
+    <Alert type="error" message={error} />
   {:else if paginatedTasks.length === 0}
-    <div class="bg-white rounded-lg shadow p-8 text-center">
-      <p class="text-gray-500">태스크가 없습니다. 새 태스크를 생성해보세요.</p>
-    </div>
-  <!-- 태스크 목록 -->
+    <Alert type="info" message="태스크가 없습니다." />
   {:else}
-    <div class="tasks-content">
-      {#if viewMode === 'table'}
-        <!-- 테이블 뷰 -->
-        <div class="table-container">
-          <table class="tasks-table">
-            <thead>
-              <tr>
-                <th>태스크명</th>
-                <th>설명</th>
-                <th>생성일</th>
-                <th>마감일</th>
-                <th>상태</th>
-                <th>이미지</th>
-                <th>액션</th>
+    <!-- 태스크 목록 -->
+    {#if viewMode === 'table'}
+      <div class="task-table">
+        <table>
+          <thead>
+            <tr>
+              <th>태스크명</th>
+              <th>상태</th>
+              <th>생성일</th>
+              <th>마감일</th>
+              <th>작업</th>
+            </tr>
+          </thead>
+          <tbody>
+            {#each paginatedTasks as task}
+              <tr
+                on:click={() => goToTaskDetail(task.id)}
+                on:keydown={(e) => handleTaskKeyDown(e, task.id)}
+                tabindex="0"
+              >
+                <td>{task.taskName}</td>
+                <td>
+                  <span class={getStatusClass(task.state)}>
+                    {getStatusText(task.state)}
+                  </span>
+                </td>
+                <td>{formatDate(task.createdAt)}</td>
+                <td>{formatDate(task.dueDate)}</td>
+                <td>
+                  <Button size="sm" on:click={(event) => {
+                    // 이벤트 전파 중지
+                    event.stopPropagation();
+                    goToTaskDetail(task.id);
+                  }}>
+                    상세보기
+                  </Button>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {#each paginatedTasks as task (task.id)}
-                <tr on:click={() => goToTaskDetail(task.id)}>
-                  <td class="task-name">{task.taskName}</td>
-                  <td class="task-description">{task.description || '-'}</td>
-                  <td>{formatDate(task.createdAt)}</td>
-                  <td>{formatDate(task.dueDate)}</td>
-                  <td>
-                    <span class={`status-badge ${getStatusClass(task.state)}`}>
-                      {getStatusText(task.state)}
-                    </span>
-                  </td>
-                  <td>{task.images ? task.images.length : 0}개</td>
-                  <td class="actions">
-                    <button class="action-button" on:click|stopPropagation={() => goToTaskDetail(task.id)}>
-                      상세
-                    </button>
-                  </td>
-                </tr>
-              {/each}
-            </tbody>
-          </table>
-        </div>
-      {:else}
-        <!-- 카드 뷰 -->
-        <div class="card-grid">
-          {#each paginatedTasks as task (task.id)}
-            <div 
-              class="task-card" 
-              on:click={() => goToTaskDetail(task.id)} 
+            {/each}
+          </tbody>
+        </table>
+      </div>
+    {:else}
+      <Grid columns="repeat(auto-fill, minmax(300px, 1fr))" gap="16px">
+        {#each paginatedTasks as task}
+          <Card
+            on:click={() => goToTaskDetail(task.id)}
+          >
+            <svelte:element this="div" 
               on:keydown={(e) => handleTaskKeyDown(e, task.id)}
-              role="button"
               tabindex="0"
-              aria-label={`태스크: ${task.taskName}`}
             >
-              <div class="card-header">
-                <h3 class="card-title">{task.taskName}</h3>
-                <span class={`status-badge ${getStatusClass(task.state)}`}>
+              <h3>{task.taskName}</h3>
+              <p>{task.description || '설명 없음'}</p>
+              <div class="task-card-footer">
+                <span class={getStatusClass(task.state)}>
                   {getStatusText(task.state)}
                 </span>
+                <span>{formatDate(task.createdAt)}</span>
               </div>
-              
-              <div class="card-body">
-                {#if task.description}
-                  <p class="card-description">{task.description}</p>
-                {:else}
-                  <p class="card-description empty">설명 없음</p>
-                {/if}
-              </div>
-              
-              <div class="card-footer">
-                <div class="card-meta">
-                  <div class="meta-item">
-                    <span class="meta-label">생성일:</span>
-                    <span class="meta-value">{formatDate(task.createdAt)}</span>
-                  </div>
-                  
-                  <div class="meta-item">
-                    <span class="meta-label">마감일:</span>
-                    <span class="meta-value">{formatDate(task.dueDate)}</span>
-                  </div>
-                  
-                  <div class="meta-item">
-                    <span class="meta-label">이미지:</span>
-                    <span class="meta-value">{task.images ? task.images.length : 0}개</span>
-                  </div>
-                </div>
-                
-                <button class="detail-button" on:click|stopPropagation={() => goToTaskDetail(task.id)}>
-                  상세 보기
-                </button>
-              </div>
-            </div>
-          {/each}
-        </div>
-      {/if}
-    </div>
-  {/if}
+            </svelte:element>
+          </Card>
+        {/each}
+      </Grid>
+    {/if}
 
-  <!-- 페이지네이션 -->
-  {#if totalPages > 1}
-    <div class="pagination">
-      <button 
-        class="page-button" 
-        disabled={currentPage === 1}
-        on:click={() => handlePageChange(currentPage - 1)}
-      >
-        이전
-      </button>
-      
-      {#each Array(totalPages) as _, i}
-        <button 
-          class="page-button" 
-          class:active={currentPage === i + 1}
-          on:click={() => handlePageChange(i + 1)}
+    <!-- 페이지네이션 -->
+    {#if totalPages > 1}
+      <div class="pagination">
+        <Button 
+          size="sm" 
+          disabled={currentPage === 1} 
+          on:click={() => handlePageChange(currentPage - 1)}
         >
-          {i + 1}
-        </button>
-      {/each}
-      
-      <button 
-        class="page-button" 
-        disabled={currentPage === totalPages}
-        on:click={() => handlePageChange(currentPage + 1)}
-      >
-        다음
-      </button>
-    </div>
+          이전
+        </Button>
+        
+        {#each Array(totalPages) as _, i}
+          <Button 
+            size="sm" 
+            variant={currentPage === i + 1 ? 'primary' : 'secondary'} 
+            on:click={() => handlePageChange(i + 1)}
+          >
+            {i + 1}
+          </Button>
+        {/each}
+        
+        <Button 
+          size="sm" 
+          disabled={currentPage === totalPages} 
+          on:click={() => handlePageChange(currentPage + 1)}
+        >
+          다음
+        </Button>
+      </div>
+    {/if}
   {/if}
-</div>
-
-<style>
-  .tasks-page {
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 24px;
-  }
-  
-  .page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-  }
-  
-  h1 {
-    margin: 0;
-    font-size: 24px;
-    font-weight: 600;
-  }
-  
-  .create-button {
-    background-color: #4A90E2;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 8px 16px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.3s;
-  }
-  
-  .create-button:hover {
-    background-color: #3A7BC8;
-  }
-  
-  .filters-bar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-bottom: 24px;
-    align-items: center;
-  }
-  
-  .search-box {
-    flex: 1;
-    min-width: 200px;
-  }
-  
-  .search-box :global(input) {
-    padding: 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    width: 200px;
-  }
-  
-  .filter-controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    align-items: center;
-  }
-  
-  .filter-controls :global(select) {
-    padding: 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background-color: white;
-  }
-  
-  .view-toggle {
-    display: flex;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    overflow: hidden;
-  }
-  
-  .view-button {
-    padding: 8px 12px;
-    background-color: white;
-    border: none;
-    font-size: 14px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-  }
-  
-  .view-button.active {
-    background-color: #f0f0f0;
-    font-weight: 500;
-  }
-  
-  .tasks-content {
-    margin-bottom: 24px;
-  }
-  
-  .loading, .error, .empty-state {
-    padding: 48px;
-    text-align: center;
-    background-color: #f9f9f9;
-    border-radius: 8px;
-  }
-  
-  .error {
-    color: #E74C3C;
-  }
-  
-  .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 16px;
-  }
-  
-  /* 테이블 뷰 스타일 */
-  .table-container {
-    overflow-x: auto;
-  }
-  
-  .tasks-table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  
-  .tasks-table th, .tasks-table td {
-    padding: 12px 16px;
-    text-align: left;
-    border-bottom: 1px solid #eee;
-  }
-  
-  .tasks-table th {
-    background-color: #f5f5f5;
-    font-weight: 500;
-    color: #333;
-  }
-  
-  .tasks-table tr {
-    cursor: pointer;
-    transition: background-color 0.3s;
-  }
-  
-  .tasks-table tr:hover {
-    background-color: #f9f9f9;
-  }
-  
-  .task-name {
-    font-weight: 500;
-  }
-  
-  .task-description {
-    max-width: 300px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  
-  .status-badge {
-    display: inline-block;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: 500;
-  }
-  
-  .status-active {
-    background-color: #E8F5E9;
-    color: #2ECC71;
-  }
-  
-  .status-hidden {
-    background-color: #FEF9E7;
-    color: #F39C12;
-  }
-  
-  .status-disabled {
-    background-color: #FDEDEB;
-    color: #E74C3C;
-  }
-  
-  .actions {
-    white-space: nowrap;
-  }
-  
-  .action-button {
-    padding: 4px 8px;
-    background-color: #f0f0f0;
-    border: none;
-    border-radius: 4px;
-    font-size: 12px;
-    cursor: pointer;
-  }
-  
-  /* 카드 뷰 스타일 */
-  .card-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 16px;
-  }
-  
-  .task-card {
-    border: 1px solid #eee;
-    border-radius: 8px;
-    overflow: hidden;
-    background-color: white;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    transition: box-shadow 0.3s, transform 0.3s;
-    cursor: pointer;
-  }
-  
-  .task-card:hover {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
-  }
-  
-  .card-header {
-    padding: 16px;
-    border-bottom: 1px solid #eee;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .card-title {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 500;
-  }
-  
-  .card-body {
-    padding: 16px;
-    min-height: 80px;
-  }
-  
-  .card-description {
-    margin: 0;
-    color: #666;
-    font-size: 14px;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  
-  .card-description.empty {
-    color: #999;
-    font-style: italic;
-  }
-  
-  .card-footer {
-    padding: 16px;
-    border-top: 1px solid #eee;
-    background-color: #f9f9f9;
-  }
-  
-  .card-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 12px;
-  }
-  
-  .meta-item {
-    display: flex;
-    font-size: 12px;
-  }
-  
-  .meta-label {
-    font-weight: 500;
-    color: #666;
-    width: 60px;
-  }
-  
-  .meta-value {
-    color: #333;
-  }
-  
-  .detail-button {
-    width: 100%;
-    padding: 8px;
-    background-color: #f0f0f0;
-    border: none;
-    border-radius: 4px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-  }
-  
-  .detail-button:hover {
-    background-color: #e0e0e0;
-  }
-  
-  /* 페이지네이션 스타일 */
-  .pagination {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    margin-top: 24px;
-  }
-  
-  .page-button {
-    padding: 8px 12px;
-    background-color: white;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.3s;
-  }
-  
-  .page-button.active {
-    background-color: #4A90E2;
-    color: white;
-    border-color: #4A90E2;
-  }
-  
-  .page-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-</style> 
+</Container> 
