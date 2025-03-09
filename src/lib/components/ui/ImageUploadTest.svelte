@@ -164,8 +164,8 @@
         <div class="image-grid">
           {#each taskImages as image}
             <div class="image-item">
-              {#if image.thumbnailPath}
-                <img src={image.thumbnailPath} alt={image.fileName} />
+              {#if image.thumbnailUrl}
+                <img src={`${image.thumbnailUrl}`} alt={image.fileName} />
               {:else}
                 <div class="placeholder-image">
                   <span>🧾</span>

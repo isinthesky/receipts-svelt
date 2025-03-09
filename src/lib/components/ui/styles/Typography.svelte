@@ -3,6 +3,7 @@
   export let color: 'primary' | 'secondary' | 'error' | 'success' | 'warning' | 'default' = 'default';
   export let align: 'left' | 'center' | 'right' = 'left';
   export let marginBottom: string = '0';
+  export let marginTop: string = '0';
   
   // 색상 클래스
   const colorClasses = {
@@ -23,35 +24,35 @@
 </script>
 
 {#if variant === 'h1'}
-  <h1 class="typography h1 {colorClasses[color]} {alignClasses[align]}" style="margin-bottom: {marginBottom}">
+  <h1 class="typography h1 {colorClasses[color]} {alignClasses[align]}" style="margin-bottom: {marginBottom}; margin-top: {marginTop}">
     <slot />
   </h1>
 {:else if variant === 'h2'}
-  <h2 class="typography h2 {colorClasses[color]} {alignClasses[align]}" style="margin-bottom: {marginBottom}">
+  <h2 class="typography h2 {colorClasses[color]} {alignClasses[align]}" style="margin-bottom: {marginBottom}; margin-top: {marginTop}">
     <slot />
   </h2>
 {:else if variant === 'h3'}
-  <h3 class="typography h3 {colorClasses[color]} {alignClasses[align]}" style="margin-bottom: {marginBottom}">
+  <h3 class="typography h3 {colorClasses[color]} {alignClasses[align]}" style="margin-bottom: {marginBottom}; margin-top: {marginTop}">
     <slot />
   </h3>
 {:else if variant === 'h4'}
-  <h4 class="typography h4 {colorClasses[color]} {alignClasses[align]}" style="margin-bottom: {marginBottom}">
+  <h4 class="typography h4 {colorClasses[color]} {alignClasses[align]}" style="margin-bottom: {marginBottom}; margin-top: {marginTop}">
     <slot />
   </h4>
 {:else if variant === 'h5'}
-  <h5 class="typography h5 {colorClasses[color]} {alignClasses[align]}" style="margin-bottom: {marginBottom}">
+  <h5 class="typography h5 {colorClasses[color]} {alignClasses[align]}" style="margin-bottom: {marginBottom}; margin-top: {marginTop}">
     <slot />
   </h5>
 {:else if variant === 'h6'}
-  <h6 class="typography h6 {colorClasses[color]} {alignClasses[align]}" style="margin-bottom: {marginBottom}">
+  <h6 class="typography h6 {colorClasses[color]} {alignClasses[align]}" style="margin-bottom: {marginBottom}; margin-top: {marginTop}">
     <slot />
   </h6>
 {:else if variant === 'span'}
-  <span class="typography span {colorClasses[color]} {alignClasses[align]}" style="margin-bottom: {marginBottom}">
+  <span class="typography span {colorClasses[color]} {alignClasses[align]}" style="margin-bottom: {marginBottom}; margin-top: {marginTop}">
     <slot />
   </span>
 {:else}
-  <p class="typography p {colorClasses[color]} {alignClasses[align]}" style="margin-bottom: {marginBottom}">
+  <p class="typography p {colorClasses[color]} {alignClasses[align]}" style="margin-bottom: {marginBottom}; margin-top: {marginTop}">
     <slot />
   </p>
 {/if}

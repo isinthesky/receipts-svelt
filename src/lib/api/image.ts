@@ -87,5 +87,47 @@ export const imageAPI = {
     }
     
     return response.data.data;
+  },
+  
+  // 영수증 영역 생성 API
+  createReceiptArea: async (imageId: string, taskId: string) => {
+    const response = await imageClient.post<ResponseData<{ success: boolean }>>(
+      `/api/v1/main/images/${imageId}/receipt-area`,
+      { taskId }
+    );
+    
+    if (!response.data.success) {
+      throw new Error(response.data.message || '영수증 영역 생성에 실패했습니다.');
+    }
+    
+    return response.data.data;
+  },
+  
+  // 영수증 영역 선택 API
+  selectReceiptArea: async (imageId: string) => {
+    const response = await imageClient.patch<ResponseData<{ success: boolean }>>(
+      `/api/v1/main/images/${imageId}/receipt-area`,
+      {areaRectType: 'blue_area'}
+    );
+    
+    if (!response.data.success) {
+      throw new Error(response.data.message || '영수증 영역 선택에 실패했습니다.');
+    }
+    
+    return response.data.data;
+  },
+  
+  // 영수증 문자열 추출 API
+  extractOcr: async (imageId: string) => {
+    const response = await imageClient.post<ResponseData<{ success: boolean }>>(
+      `/api/v1/main/images/${imageId}/ocr`,
+      {areaRectType: 'blue_area'}
+    );
+    
+    if (!response.data.success) {
+      throw new Error(response.data.message || '문자열 추출에 실패했습니다.');
+    }
+    
+    return response.data.data;
   }
 }; 

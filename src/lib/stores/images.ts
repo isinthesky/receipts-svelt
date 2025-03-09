@@ -38,20 +38,21 @@ const initialState: ImageState = {
 const { subscribe, update } = writable(initialState);
 
 // API 응답 데이터를 Image 인터페이스에 맞게 변환하는 함수
-function mapApiImageToImage(apiImage: any): Image {
+function mapApiImageToImage(apiImage: Image): Image {
   return {
     id: typeof apiImage.id === 'string' ? apiImage.id : '',
-    taskId: typeof apiImage.task_id === 'string' ? apiImage.task_id : (typeof apiImage.taskId === 'string' ? apiImage.taskId : ''),
-    fileName: typeof apiImage.file_name === 'string' ? apiImage.file_name : (typeof apiImage.fileName === 'string' ? apiImage.fileName : ''),
-    fileSize: typeof apiImage.file_size === 'number' ? apiImage.file_size : (typeof apiImage.fileSize === 'number' ? apiImage.fileSize : 0),
-    fileType: typeof apiImage.file_type === 'string' ? apiImage.file_type : (typeof apiImage.fileType === 'string' ? apiImage.fileType : ''),
-    filePath: typeof apiImage.file_path === 'string' ? apiImage.file_path : (typeof apiImage.filePath === 'string' ? apiImage.filePath : ''),
-    thumbnailPath: typeof apiImage.thumbnail_path === 'string' ? apiImage.thumbnail_path : (typeof apiImage.thumbnailPath === 'string' ? apiImage.thumbnailPath : null),
-    description: typeof apiImage.description === 'string' ? apiImage.description : null,
-    processingStatus: typeof apiImage.processing_status === 'number' ? apiImage.processing_status : (typeof apiImage.processingStatus === 'number' ? apiImage.processingStatus : 1),
-    receiptCount: typeof apiImage.receipt_count === 'number' ? apiImage.receipt_count : (typeof apiImage.receiptCount === 'number' ? apiImage.receiptCount : 0),
-    createdAt: typeof apiImage.created_at === 'string' ? apiImage.created_at : (typeof apiImage.createdAt === 'string' ? apiImage.createdAt : new Date().toISOString()),
-    updatedAt: typeof apiImage.updated_at === 'string' ? apiImage.updated_at : (typeof apiImage.updatedAt === 'string' ? apiImage.updatedAt : new Date().toISOString()),
+    taskId: typeof apiImage.taskId === 'string' ? apiImage.taskId : '',
+    fileName: typeof apiImage.fileName === 'string' ? apiImage.fileName : '',
+    rectUrl: typeof apiImage.rectUrl === 'string' ? apiImage.rectUrl : '',
+    thumbnailUrl: typeof apiImage.thumbnailUrl === 'string' ? apiImage.thumbnailUrl : null,
+    filePath: typeof apiImage.filePath === 'string' ? apiImage.filePath : apiImage.rectUrl,
+    fileSize: typeof apiImage.fileSize === 'number' ? apiImage.fileSize : 0,
+    fileType: typeof apiImage.fileType === 'string' ? apiImage.fileType : 'image/jpeg',
+    ocrConfidence: typeof apiImage.ocrConfidence === 'number' ? apiImage.ocrConfidence : 0,
+    processingStatus: typeof apiImage.processingStatus === 'number' ? apiImage.processingStatus : 1,
+    receiptCount: typeof apiImage.receiptCount === 'number' ? apiImage.receiptCount : 0,
+    createdAt: typeof apiImage.createdAt === 'string' ? apiImage.createdAt : new Date().toISOString(),
+    updatedAt: typeof apiImage.updatedAt === 'string' ? apiImage.updatedAt : new Date().toISOString(),
     state: typeof apiImage.state === 'number' ? apiImage.state : 1
   };
 }
@@ -69,8 +70,7 @@ function filterAndSortImages(images: Image[], options: ImageFilterOptions): Imag
   if (options.search) {
     const searchLower = options.search.toLowerCase();
     filteredImages = filteredImages.filter(img => 
-      img.fileName.toLowerCase().includes(searchLower) || 
-      (img.description && img.description.toLowerCase().includes(searchLower))
+      img.fileName.toLowerCase().includes(searchLower)
     );
   }
   
@@ -109,8 +109,10 @@ export const imageStore = {
       
       // API 응답 데이터를 Image 인터페이스에 맞게 변환
       const mappedImages = Array.isArray(images) 
-        ? images.map(image => mapApiImageToImage(image as any))
+        ? images.map(image => mapApiImageToImage(image as Image))
         : [];
+
+      console.log('loadImagesByTaskId mappedImages', mappedImages);
       
       update(state => ({ 
         ...state, 
@@ -140,7 +142,7 @@ export const imageStore = {
         throw new Error('이미지를 찾을 수 없습니다.');
       }
       
-      const mappedImage = mapApiImageToImage(image as any);
+      const mappedImage = mapApiImageToImage(image as Image);
       
       update(state => ({
         ...state,
@@ -194,7 +196,7 @@ export const imageStore = {
         throw new Error('이미지 업로드에 실패했습니다.');
       }
       
-      const mappedImage = mapApiImageToImage(image as any);
+      const mappedImage = mapApiImageToImage(image as Image);
       
       update(state => {
         // 해당 태스크의 이미지 목록에 새 이미지 추가
@@ -250,6 +252,56 @@ export const imageStore = {
     
     const images = currentState.imagesByTask[taskId] || [];
     return filterAndSortImages(images, currentState.filterOptions);
+  },
+  
+  // 이미지 상태 업데이트
+  updateImageStatus: async (imageId: string, status: number) => {
+    try {
+      // 모든 태스크에서 해당 이미지 찾기
+      let foundImage: Image | null = null;
+      let foundTaskId: string | null = null;
+      
+      update(state => {
+        // 모든 태스크를 순회하며 이미지 찾기
+        for (const [taskId, images] of Object.entries(state.imagesByTask)) {
+          const image = images.find(img => img.id === imageId);
+          if (image) {
+            foundImage = image;
+            foundTaskId = taskId;
+            break;
+          }
+        }
+        
+        // 이미지를 찾지 못한 경우
+        if (!foundImage || !foundTaskId) {
+          return state;
+        }
+        
+        // 이미지 상태 업데이트
+        const updatedImages = state.imagesByTask[foundTaskId].map(img => 
+          img.id === imageId ? { ...img, processingStatus: status } : img
+        );
+        
+        // 현재 선택된 이미지가 업데이트 대상인 경우 함께 업데이트
+        const updatedCurrentImage = state.currentImage && state.currentImage.id === imageId
+          ? { ...state.currentImage, processingStatus: status }
+          : state.currentImage;
+        
+        return {
+          ...state,
+          imagesByTask: {
+            ...state.imagesByTask,
+            [foundTaskId]: updatedImages
+          },
+          currentImage: updatedCurrentImage
+        };
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Error in updateImageStatus:', error);
+      return false;
+    }
   },
   
   // 오류 초기화

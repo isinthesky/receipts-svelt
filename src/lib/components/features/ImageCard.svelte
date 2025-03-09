@@ -4,6 +4,8 @@
 
   // 속성 정의
   export let image: Image;
+  const IMAGE_API_URL = "http://facreport.iptime.org:5008";
+  console.log('IMAGE_API_URL', IMAGE_API_URL);
 
   // 파일 크기 포맷팅 함수
   function formatFileSize(bytes: number): string {
@@ -74,8 +76,8 @@
 
 <div class="image-card">
   <div class="image-thumbnail">
-    {#if image.thumbnailPath}
-      <img src={image.thumbnailPath} alt={image.fileName} />
+    {#if image.thumbnailUrl}
+      <img src={`${IMAGE_API_URL}/${image.thumbnailUrl}`} alt={image.fileName} />
     {:else}
       <div class="no-thumbnail">
         <span>이미지 없음</span>

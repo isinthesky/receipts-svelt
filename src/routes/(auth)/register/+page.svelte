@@ -90,7 +90,7 @@
   subtitleLink="/login" 
   subtitleLinkText="로그인"
 >
-  <Form on:submit|preventDefault={handleSubmit}>
+  <Form on:submit={handleSubmit}>
     <FormGroup>
       <Input
         type="text"

@@ -81,7 +81,7 @@
   subtitleLink="/register" 
   subtitleLinkText="회원가입"
 >
-  <Form on:submit|preventDefault={handleSubmit}>
+  <Form on:submit={handleSubmit}>
     <FormGroup>
       <Input
         type="text"

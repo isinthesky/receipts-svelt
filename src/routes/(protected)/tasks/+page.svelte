@@ -302,7 +302,7 @@
                       {getStatusText(task.state)}
                     </span>
                   </td>
-                  <td>{task.receipts ? task.receipts.length : 0}개</td>
+                  <td>{task.images ? task.images.length : 0}개</td>
                   <td class="actions">
                     <button class="action-button" on:click|stopPropagation={() => goToTaskDetail(task.id)}>
                       상세
@@ -354,7 +354,7 @@
                   
                   <div class="meta-item">
                     <span class="meta-label">영수증:</span>
-                    <span class="meta-value">{task.receipts ? task.receipts.length : 0}개</span>
+                    <span class="meta-value">{task.images ? task.images.length : 0}개</span>
                   </div>
                 </div>
                 

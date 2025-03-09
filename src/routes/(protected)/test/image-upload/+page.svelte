@@ -74,7 +74,7 @@ const uploadImage = async (taskId, file, description) => {
     "fileSize": 123456,
     "fileType": "image/jpeg",
     "filePath": "/path/to/image.jpg",
-    "thumbnailPath": "/path/to/thumbnail.jpg",
+    "thumbnailUrl": "/path/to/thumbnail.jpg",
     "description": "이미지 설명",
     "processingStatus": 1,
     "receiptCount": 0,

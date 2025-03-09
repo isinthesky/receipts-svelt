@@ -4,7 +4,8 @@
 
   // 속성 정의
   export let image: Image;
-
+  const IMAGE_API_URL = "http://facreport.iptime.org:5008";
+  
   // 이벤트 디스패처 생성
   const dispatch = createEventDispatcher();
 
@@ -118,6 +119,8 @@
   <div 
     class="modal-content" 
     on:click|stopPropagation 
+    on:keydown|stopPropagation={handleKeyDown}
+    role="document"
     aria-label="이미지 상세 정보"
   >
     <div class="modal-header">
@@ -127,8 +130,8 @@
     
     <div class="modal-body">
       <div class="image-container">
-        {#if image.filePath}
-          <img src={image.filePath} alt={image.fileName} />
+        {#if image.thumbnailUrl}
+          <img src={`${IMAGE_API_URL}/${image.thumbnailUrl}`} alt={image.fileName} />
         {:else}
           <div class="no-image">
             <span>이미지를 불러올 수 없습니다.</span>

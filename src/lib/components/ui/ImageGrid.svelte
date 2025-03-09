@@ -1,7 +1,10 @@
 <script lang="ts">
+  const IMAGE_API_URL = "http://facreport.iptime.org:5008";
+  console.log('IMAGE_API_URL', IMAGE_API_URL);
+
   export let images: Array<{
     id: string;
-    thumbnailPath: string;
+    thumbnailUrl: string;
     fileName: string;
   }> = [];
   export let onImageClick: (imageId: string) => void;
@@ -23,8 +26,8 @@
           on:click={() => onImageClick(image.id)}
           aria-label={`이미지 ${image.fileName} 보기`}
         >
-          {#if image.thumbnailPath}
-            <img src={image.thumbnailPath} alt={image.fileName} />
+          {#if image.thumbnailUrl}
+            <img src={`${IMAGE_API_URL}/${image.thumbnailUrl}`} alt={image.fileName} />
           {:else}
             <div class="placeholder-image">
               <span>🧾</span>

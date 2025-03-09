@@ -20,7 +20,7 @@ interface ApiTaskData {
   createdAt?: string;
   updatedAt?: string;
   state?: number;
-  receipts?: Record<string, unknown>[] | null;
+  images?: Record<string, unknown>[] | null;
   [key: string]: unknown;
 }
 
@@ -44,7 +44,7 @@ function mapApiTaskToTask(apiTask: ApiTaskData): Task {
     createdAt: typeof apiTask.created_at === 'string' ? apiTask.created_at : (typeof apiTask.createdAt === 'string' ? apiTask.createdAt : new Date().toISOString()),
     updatedAt: typeof apiTask.updated_at === 'string' ? apiTask.updated_at : (typeof apiTask.updatedAt === 'string' ? apiTask.updatedAt : new Date().toISOString()),
     state: typeof apiTask.state === 'number' ? apiTask.state : 1,
-    receipts: Array.isArray(apiTask.receipts) ? apiTask.receipts : null
+    images: Array.isArray(apiTask.images) ? apiTask.images : null
   };
 }
 

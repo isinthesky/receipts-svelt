@@ -28,7 +28,7 @@
   let recentTasks: Task[] = [];
   let recentImages: Array<{
     id: string;
-    thumbnailPath: string;
+    thumbnailUrl: string;
     fileName: string;
   }> = [];
   
@@ -51,10 +51,10 @@
       
       // 최근 이미지 (예시)
       recentImages = [
-        { id: '1', thumbnailPath: '', fileName: '영수증1.jpg' },
-        { id: '2', thumbnailPath: '', fileName: '영수증2.jpg' },
-        { id: '3', thumbnailPath: '', fileName: '영수증3.jpg' },
-        { id: '4', thumbnailPath: '', fileName: '영수증4.jpg' }
+        { id: '1', thumbnailUrl: '', fileName: '영수증1.jpg' },
+        { id: '2', thumbnailUrl: '', fileName: '영수증2.jpg' },
+        { id: '3', thumbnailUrl: '', fileName: '영수증3.jpg' },
+        { id: '4', thumbnailUrl: '', fileName: '영수증4.jpg' }
       ];
     } catch (err) {
       error = err instanceof Error ? err.message : '데이터를 불러오는데 실패했습니다.';
