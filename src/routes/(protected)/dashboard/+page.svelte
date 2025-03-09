@@ -12,6 +12,9 @@
   import TaskTable from '$lib/components/ui/TaskTable.svelte';
   import ImageGrid from '$lib/components/ui/ImageGrid.svelte';
   import Loading from '$lib/components/ui/Loading.svelte';
+  import Container from '$lib/components/ui/styles/Container.svelte';
+  import Grid from '$lib/components/ui/styles/Grid.svelte';
+  import ErrorMessage from '$lib/components/ui/styles/ErrorMessage.svelte';
   
   // 상태 관리
   let loading = true;
@@ -128,19 +131,16 @@
   });
 </script>
 
-<div class="dashboard-container">
+<Container>
   <WelcomeSection username={$authStore.user?.name || '사용자'} />
   
   {#if loading}
     <Loading text="데이터를 불러오는 중..." />
   {:else if error}
-    <div class="error-container">
-      <p>{error}</p>
-      <button class="retry-button" on:click={loadDashboardData}>다시 시도</button>
-    </div>
+    <ErrorMessage message={error} showRetry={true} on:retry={loadDashboardData} />
   {:else}
     <!-- 통계 카드 섹션 -->
-    <div class="stats-grid">
+    <Grid>
       <StatCard 
         title="총 태스크" 
         value={stats.totalTasks} 
@@ -168,64 +168,11 @@
         change="5% 감소" 
         isIncrease={false} 
       />
-    </div>
+    </Grid>
     
-    <div class="content-grid">
+    <Grid columns="1fr 320px" gap="16px">
       <TaskTable tasks={recentTasks} onViewTask={goToTaskDetail} />
       <ImageGrid images={recentImages} onImageClick={goToImageDetail} />
-    </div>
+    </Grid>
   {/if}
-</div>
-
-<style>
-  .dashboard-container {
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 24px;
-  }
-  
-  .error-container {
-    padding: 24px;
-    text-align: center;
-    background-color: #fee2e2;
-    color: #b91c1c;
-    border-radius: 8px;
-    margin-bottom: 24px;
-  }
-  
-  .retry-button {
-    margin-top: 12px;
-    padding: 8px 16px;
-    background-color: #ef4444;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-  }
-  
-  .retry-button:hover {
-    background-color: #dc2626;
-  }
-  
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 16px;
-    margin-bottom: 24px;
-  }
-  
-  .content-grid {
-    display: grid;
-    grid-template-columns: 1fr 320px;
-    gap: 16px;
-  }
-  
-  @media (max-width: 768px) {
-    .content-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-</style> 
+</Container> 

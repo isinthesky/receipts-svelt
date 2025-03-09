@@ -2,7 +2,14 @@
   import { authStore, isAuthenticated } from '$lib/stores/auth';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import axios from 'axios';
+  
+  // 공통 컴포넌트 임포트
+  import AuthCard from '$lib/components/ui/styles/AuthCard.svelte';
+  import Form from '$lib/components/ui/styles/Form.svelte';
+  import FormGroup from '$lib/components/ui/styles/FormGroup.svelte';
+  import Input from '$lib/components/ui/styles/Input.svelte';
+  import Button from '$lib/components/ui/styles/Button.svelte';
+  import ErrorMessage from '$lib/components/ui/styles/ErrorMessage.svelte';
 
   // 폼 상태
   let username = '';
@@ -68,91 +75,137 @@
   }
 </script>
 
-<div class="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-  <div class="max-w-md w-full space-y-8">
-    <div>
-      <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
-        로그인
-      </h2>
-      <p class="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-        계정이 없으신가요?
-        <a href="/register" class="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400">
-          회원가입
-        </a>
-      </p>
+<AuthCard 
+  title="로그인" 
+  subtitle="계정이 없으신가요?" 
+  subtitleLink="/register" 
+  subtitleLinkText="회원가입"
+>
+  <Form on:submit|preventDefault={handleSubmit}>
+    <FormGroup>
+      <Input
+        type="text"
+        id="username"
+        name="username"
+        label="아이디"
+        placeholder="아이디를 입력하세요"
+        autocomplete="username"
+        required={true}
+        bind:value={username}
+      />
+    </FormGroup>
+    
+    <FormGroup>
+      <Input
+        type="password"
+        id="password"
+        name="password"
+        label="비밀번호"
+        placeholder="비밀번호를 입력하세요"
+        autocomplete="current-password"
+        required={true}
+        bind:value={password}
+      />
+    </FormGroup>
+    
+    <div class="flex-row">
+      <div class="checkbox-container">
+        <input
+          id="remember-me"
+          name="remember-me"
+          type="checkbox"
+          bind:checked={rememberMe}
+          class="checkbox"
+        />
+        <label for="remember-me" class="checkbox-label">
+          로그인 상태 유지
+        </label>
+      </div>
+      
+      <a href="/forgot-password" class="forgot-link">
+        비밀번호를 잊으셨나요?
+      </a>
     </div>
     
-    <form class="mt-8 space-y-6" on:submit|preventDefault={handleSubmit}>
-      <div class="rounded-md shadow-sm -space-y-px">
-        <div>
-          <label for="username" class="sr-only">아이디</label>
-          <input
-            id="username"
-            name="username"
-            type="text"
-            autocomplete="username"
-            required
-            bind:value={username}
-            class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-            placeholder="아이디"
-          />
-        </div>
-        <div>
-          <label for="password" class="sr-only">비밀번호</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autocomplete="current-password"
-            required
-            bind:value={password}
-            class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-            placeholder="비밀번호"
-          />
-        </div>
+    {#if formError}
+      <ErrorMessage message={formError} />
+    {/if}
+    
+    {#if $authStore.loading}
+      <div class="loading-container">
+        <div class="loading-spinner"></div>
+        <span class="loading-text">로그인 중...</span>
       </div>
+    {/if}
+    
+    <Button
+      type="submit"
+      variant="primary"
+      fullWidth={true}
+      disabled={isSubmitting || $authStore.loading}
+    >
+      로그인
+    </Button>
+  </Form>
+</AuthCard>
 
-      <div class="flex items-center justify-between">
-        <div class="flex items-center">
-          <input
-            id="remember-me"
-            name="remember-me"
-            type="checkbox"
-            bind:checked={rememberMe}
-            class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded dark:bg-gray-800 dark:border-gray-700"
-          />
-          <label for="remember-me" class="ml-2 block text-sm text-gray-900 dark:text-gray-300">
-            로그인 상태 유지
-          </label>
-        </div>
-
-        <div class="text-sm">
-          <a href="/forgot-password" class="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400">
-            비밀번호를 잊으셨나요?
-          </a>
-        </div>
-      </div>
-
-      {#if formError}
-        <div class="text-red-500 text-sm text-center">{formError}</div>
-      {/if}
-
-      {#if $authStore.loading}
-        <div class="text-center">
-          <div class="inline-block animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500"></div>
-          <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">로그인 중...</span>
-        </div>
-      {/if}
-
-      <div>
-        <button
-          type="submit"
-          disabled={isSubmitting || $authStore.loading}
-          class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-blue-700 dark:hover:bg-blue-800"
-        >
-          로그인
-        </button>
-      </div>
-    </form>
-  </div>
-</div> 
+<style>
+  .flex-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  
+  .checkbox-container {
+    display: flex;
+    align-items: center;
+  }
+  
+  .checkbox {
+    width: 1rem;
+    height: 1rem;
+    margin-right: 0.5rem;
+  }
+  
+  .checkbox-label {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+  }
+  
+  .forgot-link {
+    font-size: 0.875rem;
+    color: #3b82f6;
+    text-decoration: none;
+  }
+  
+  .forgot-link:hover {
+    text-decoration: underline;
+  }
+  
+  .loading-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+  }
+  
+  .loading-spinner {
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid #e5e7eb;
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 0.5rem;
+  }
+  
+  .loading-text {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+</style> 

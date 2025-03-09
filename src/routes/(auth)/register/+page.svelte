@@ -2,6 +2,14 @@
   import { authStore, isAuthenticated } from '$lib/stores/auth';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
+  
+  // 공통 컴포넌트 임포트
+  import AuthCard from '$lib/components/ui/styles/AuthCard.svelte';
+  import Form from '$lib/components/ui/styles/Form.svelte';
+  import FormGroup from '$lib/components/ui/styles/FormGroup.svelte';
+  import Input from '$lib/components/ui/styles/Input.svelte';
+  import Button from '$lib/components/ui/styles/Button.svelte';
+  import ErrorMessage from '$lib/components/ui/styles/ErrorMessage.svelte';
 
   // 폼 상태
   let name = '';
@@ -76,95 +84,110 @@
   }
 </script>
 
-<div class="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-  <div class="max-w-md w-full space-y-8">
-    <div>
-      <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
-        회원가입
-      </h2>
-      <p class="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-        이미 계정이 있으신가요?
-        <a href="/login" class="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400">
-          로그인
-        </a>
-      </p>
-    </div>
+<AuthCard 
+  title="회원가입" 
+  subtitle="이미 계정이 있으신가요?" 
+  subtitleLink="/login" 
+  subtitleLinkText="로그인"
+>
+  <Form on:submit|preventDefault={handleSubmit}>
+    <FormGroup>
+      <Input
+        type="text"
+        id="name"
+        name="name"
+        label="이름"
+        placeholder="이름을 입력하세요"
+        required={true}
+        bind:value={name}
+      />
+    </FormGroup>
     
-    <form class="mt-8 space-y-6" on:submit|preventDefault={handleSubmit}>
-      <div class="rounded-md shadow-sm -space-y-px">
-        <div>
-          <label for="name" class="sr-only">이름</label>
-          <input
-            id="name"
-            name="name"
-            type="text"
-            required
-            bind:value={name}
-            class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-            placeholder="이름"
-          />
-        </div>
-        <div>
-          <label for="email-address" class="sr-only">이메일</label>
-          <input
-            id="email-address"
-            name="email"
-            type="email"
-            autocomplete="email"
-            required
-            bind:value={email}
-            class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-            placeholder="이메일"
-          />
-        </div>
-        <div>
-          <label for="password" class="sr-only">비밀번호</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autocomplete="new-password"
-            required
-            bind:value={password}
-            class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-            placeholder="비밀번호 (6자 이상)"
-          />
-        </div>
-        <div>
-          <label for="confirm-password" class="sr-only">비밀번호 확인</label>
-          <input
-            id="confirm-password"
-            name="confirm-password"
-            type="password"
-            autocomplete="new-password"
-            required
-            bind:value={confirmPassword}
-            class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-            placeholder="비밀번호 확인"
-          />
-        </div>
+    <FormGroup>
+      <Input
+        type="email"
+        id="email-address"
+        name="email"
+        label="이메일"
+        placeholder="이메일을 입력하세요"
+        autocomplete="email"
+        required={true}
+        bind:value={email}
+      />
+    </FormGroup>
+    
+    <FormGroup>
+      <Input
+        type="password"
+        id="password"
+        name="password"
+        label="비밀번호"
+        placeholder="비밀번호 (6자 이상)"
+        autocomplete="new-password"
+        required={true}
+        bind:value={password}
+      />
+    </FormGroup>
+    
+    <FormGroup>
+      <Input
+        type="password"
+        id="confirm-password"
+        name="confirm-password"
+        label="비밀번호 확인"
+        placeholder="비밀번호를 다시 입력하세요"
+        autocomplete="new-password"
+        required={true}
+        bind:value={confirmPassword}
+      />
+    </FormGroup>
+    
+    {#if formError}
+      <ErrorMessage message={formError} />
+    {/if}
+    
+    {#if $authStore.loading}
+      <div class="loading-container">
+        <div class="loading-spinner"></div>
+        <span class="loading-text">회원가입 중...</span>
       </div>
+    {/if}
+    
+    <Button
+      type="submit"
+      variant="primary"
+      fullWidth={true}
+      disabled={isSubmitting || $authStore.loading}
+    >
+      회원가입
+    </Button>
+  </Form>
+</AuthCard>
 
-      {#if formError}
-        <div class="text-red-500 text-sm text-center">{formError}</div>
-      {/if}
-
-      {#if $authStore.loading}
-        <div class="text-center">
-          <div class="inline-block animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500"></div>
-          <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">회원가입 중...</span>
-        </div>
-      {/if}
-
-      <div>
-        <button
-          type="submit"
-          disabled={isSubmitting || $authStore.loading}
-          class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-blue-700 dark:hover:bg-blue-800"
-        >
-          회원가입
-        </button>
-      </div>
-    </form>
-  </div>
-</div> 
+<style>
+  .loading-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+  }
+  
+  .loading-spinner {
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid #e5e7eb;
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 0.5rem;
+  }
+  
+  .loading-text {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+</style> 
