@@ -39,4 +39,36 @@ export interface UpdateReceiptDto {
   total_amount?: number;
   state?: number;
   items?: Omit<ReceiptItem, 'id' | 'receipt_id'>[];
-} 
+}
+
+
+export type ProcessingStatusType = 'pending' | 'uploading' | 'processing' | 'success' | 'error' | 'cancelled';
+
+
+export interface ReceiptProcessingStatus {
+  status: ProcessingStatusType;
+  message: string;
+  data?: ProcessedReceipt;
+}
+
+// 처리된 영수증 데이터
+export interface ProcessedReceipt {
+  id: string;
+  imageId: string;
+  storeName: string;
+  date: string;
+  totalAmount: number;
+  items: ReceiptItem[];
+  taxAmount?: number;
+  discountAmount?: number;
+  paymentMethod?: string;
+  // 추가 필드들...
+}
+
+// 영수증 항목
+export interface ReceiptItem {
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}

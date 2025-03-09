@@ -34,3 +34,15 @@ export interface ImageFilterOptions {
   sortOrder?: 'asc' | 'desc';
   search?: string;
 } 
+
+export interface UploadedImage {
+    id: string;
+    originalFilename: string;
+    mimeType: string;
+    size: number;
+    width?: number;
+    height?: number;
+    url: string;
+    thumbnailUrl?: string;
+    uploadedAt: string;
+  }

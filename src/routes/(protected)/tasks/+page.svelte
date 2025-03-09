@@ -286,7 +286,7 @@
                 <th>생성일</th>
                 <th>마감일</th>
                 <th>상태</th>
-                <th>영수증</th>
+                <th>이미지</th>
                 <th>액션</th>
               </tr>
             </thead>
@@ -353,7 +353,7 @@
                   </div>
                   
                   <div class="meta-item">
-                    <span class="meta-label">영수증:</span>
+                    <span class="meta-label">이미지:</span>
                     <span class="meta-value">{task.images ? task.images.length : 0}개</span>
                   </div>
                 </div>

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { browser } from '$app/environment';
 import { setupInterceptors } from './interceptors';
-import type { Image, ImageUploadDto } from '../types/image.types';
+import type { Image, ImageUploadDto, UploadedImage } from '../types/image.types';
 import type { ResponseData, ResponseListData } from './auth';
 import { getTokenFromStorage, refreshAuthToken, removeTokensFromStorage } from './auth';
 
@@ -129,5 +129,69 @@ export const imageAPI = {
     }
     
     return response.data.data;
+  },
+  
+  // 이미지별 영수증 목록 조회 API
+  getReceiptsByImageId: async (imageId: string) => {
+    const response = await imageClient.get<ResponseListData<any>>(
+      `/api/v1/main/images/${imageId}/receipts`
+    );
+    
+    if (!response.data.success) {
+      throw new Error(response.data.message || '영수증 목록을 불러오는데 실패했습니다.');
+    }
+    
+    return response.data.data;
+  },
+  
+  // 영수증 GPT 분석 API
+  analyzeReceiptWithGpt: async (receiptId: string) => {
+    const response = await imageClient.post<ResponseData<any>>(
+      `/api/main/v1/main/receipts/${receiptId}/gpt-analysis`,
+      {}
+    );
+    
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'GPT 분석에 실패했습니다.');
+    }
+    
+    return response.data.data;
+  },
+
+  async uploadImages(files: File[]): Promise<UploadedImage[]> {
+    try {
+      // 업로드할 파일이 없으면 빈 배열 반환
+      if (!files || files.length === 0) {
+        return Promise.resolve([]);
+      }
+      
+      // FormData 객체 생성
+      const formData = new FormData();
+      
+      // 각 파일을 FormData에 추가
+      files.forEach((file, index) => {
+        formData.append(`images[${index}]`, file);
+      });
+      
+      // API 엔드포인트 설정 - 실제 서버 URL로 변경 필요
+      const apiUrl = '/api/images/upload-multiple';
+      
+      // POST 요청으로 FormData 전송
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || '이미지 업로드 중 오류가 발생했습니다');
+      }
+      
+      const data = await response.json();
+      return data.images as UploadedImage[];
+    } catch (error) {
+      console.error('이미지 업로드 오류:', error);
+      throw error;
+    }
   }
 }; 
