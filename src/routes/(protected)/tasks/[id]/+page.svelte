@@ -21,8 +21,8 @@
     state: 1
   };
 
-  // 태스크 ID 가져오기
-  const taskId = $page.params.id;
+  // 태스크 ID 반응형으로 가져오기
+  $: taskId = $page.params.id;
 
   // 태스크 로드 함수
   async function loadTask() {
@@ -46,6 +46,13 @@
       task = null;
     } finally {
       loading = false;
+    }
+  }
+
+  // URL ID가 변경될 때마다 태스크 다시 로드 (반응형 선언)
+  $: {
+    if (taskId) {
+      loadTask();
     }
   }
 
@@ -170,11 +177,6 @@
     // 모달 내부에서 이벤트 전파 중지
     event.stopPropagation();
   }
-
-  // 컴포넌트 마운트 시 태스크 로드
-  onMount(() => {
-    loadTask();
-  });
 </script>
 
 <div class="task-detail-page">
@@ -629,4 +631,4 @@
     justify-content: flex-end;
     gap: 8px;
   }
-</style> 
+</style>
