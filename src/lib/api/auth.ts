@@ -7,7 +7,6 @@ import { setupInterceptors } from './interceptors';
 // 환경 변수에서 API URL 가져오기
 // const API_URL = browser ? import.meta.env.PUBLIC_AUTH_API_URL : 'http://facreport.iptime.org:5009';
 const API_URL = 'http://facreport.iptime.org:5009';
-console.log('API_URL', API_URL);
 
 // 사용자 데이터 타입 정의
 export interface UserData {
@@ -199,11 +198,12 @@ setupInterceptors(authApi, {
 });
 
 // API 함수들
-export const login = async (email: string, password: string): Promise<LoginResponse> => {
-  console.log('API login 호출됨:', email, password);
+export const login = async (email: string, password: string, rememberMe: boolean = false): Promise<LoginResponse> => {
+  console.log('API login 호출됨:', email, password, rememberMe);
   const response = await authApi.post<LoginResponse>('api/v1/auth/local/login', {
     username: email,
-    password
+    password,
+    rememberMe
   });
   
   // 로그인 성공 시 토큰 저장

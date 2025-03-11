@@ -132,10 +132,6 @@
     opacity: 0.6;
   }
   
-  .bg-sidebar-hover {
-    background-color: var(--sidebar-hover);
-  }
-  
   .text-sidebar-text {
     color: var(--sidebar-text);
   }

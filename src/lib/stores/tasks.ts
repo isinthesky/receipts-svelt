@@ -35,7 +35,6 @@ const { subscribe, update } = writable(initialState);
 
 // API 응답 데이터를 Task 인터페이스에 맞게 변환하는 함수
 function mapApiTaskToTask(apiTask: ApiTaskData): Task {
-  console.log('mapApiTaskToTask apiTask', apiTask);
   return {
     id: apiTask.id || '',
     taskName: typeof apiTask.task_name === 'string' ? apiTask.task_name : (typeof apiTask.taskName === 'string' ? apiTask.taskName : ''),
@@ -54,16 +53,12 @@ export const taskStore = {
     update(state => ({ ...state, loading: true, error: null }));
     try {
       const tasks = await taskAPI.getTasks();
-
-      console.log('loadTasks tasks', tasks);
-      console.log('loadTasks tasks type', Array.isArray(tasks) ? 'array' : typeof tasks);
-
+      
       // API 응답 데이터를 Task 인터페이스에 맞게 변환
       const mappedTasks = Array.isArray(tasks) 
         ? tasks.map(task => mapApiTaskToTask(task as ApiTaskData))
         : [];
       
-      console.log('Mapped tasks:', mappedTasks);
       
       update(state => ({ 
         ...state, 
@@ -108,7 +103,6 @@ export const taskStore = {
     update(state => ({ ...state, loading: true, error: null }));
     try {
       const task = await taskAPI.createTask(taskData);
-      console.log('createTask task', task);
       
       if (!task) {
         throw new Error('태스크 생성에 실패했습니다.');

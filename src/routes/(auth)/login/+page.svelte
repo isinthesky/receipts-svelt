@@ -52,8 +52,8 @@
     isSubmitting = true;
 
     try {
-      console.log('authStore.login 호출 직전:', username, password);
-      const success = await authStore.login(username, password);
+      console.log('authStore.login 호출 직전:', username, password, rememberMe);
+      const success = await authStore.login(username, password, rememberMe);
       console.log('로그인 결과:', success);
       
       if (success) {

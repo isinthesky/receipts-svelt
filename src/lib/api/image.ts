@@ -7,7 +7,6 @@ import { getTokenFromStorage, refreshAuthToken, removeTokensFromStorage } from '
 
 // 이미지 API URL 설정
 const IMAGE_API_URL = 'http://facreport.iptime.org:5008';
-console.log('IMAGE_API_URL', IMAGE_API_URL);
 
 // 이미지 API 클라이언트 생성
 const imageClient = axios.create({

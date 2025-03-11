@@ -7,7 +7,6 @@ import { getTokenFromStorage, refreshAuthToken, removeTokensFromStorage } from '
 
 // 태스크 API URL 설정
 const TASK_API_URL = 'http://facreport.iptime.org:5008';
-console.log('TASK_API_URL', TASK_API_URL);
 
 // 태스크 API 클라이언트 생성
 const taskClient = axios.create({
@@ -36,7 +35,6 @@ export const taskAPI = {
   // 모든 태스크 가져오기
   getTasks: async () => {
     const response = await taskClient.get<ResponseListData<Task>>('/api/v1/main/tasks');
-    console.log('getTasks response', response);
     if (!response.data.success) {
       throw new Error(response.data.message || '태스크를 불러오는데 실패했습니다.');
     }

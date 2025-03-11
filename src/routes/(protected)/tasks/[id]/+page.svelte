@@ -326,7 +326,10 @@
       <div 
         class="modal-content" 
         on:click|stopPropagation 
+        on:keydown={handleModalContentKeyDown}
         aria-label="모달 내용"
+        role="dialog"
+        tabindex="0"
       >
         <div class="modal-header">
           <h2>태스크 삭제 확인</h2>

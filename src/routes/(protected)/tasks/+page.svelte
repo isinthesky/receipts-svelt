@@ -285,7 +285,7 @@
               <th>태스크명</th>
               <th>상태</th>
               <th>생성일</th>
-              <th>마감일</th>
+              <th>마지막 수정일</th>
               <th>작업</th>
             </tr>
           </thead>
@@ -303,7 +303,7 @@
                   </span>
                 </td>
                 <td>{formatDate(task.createdAt)}</td>
-                <td>{formatDate(task.dueDate)}</td>
+                <td>{formatDate(task.updatedAt)}</td>
                 <td>
                   <Button size="sm" on:click={(event) => {
                     // 이벤트 전파 중지
@@ -324,9 +324,10 @@
           <Card
             on:click={() => goToTaskDetail(task.id)}
           >
-            <svelte:element this="div" 
-              on:keydown={(e) => handleTaskKeyDown(e, task.id)}
+            <svelte:element this={'div'} 
+              on:keydown={(e: KeyboardEvent) => handleTaskKeyDown(e, task.id)}
               tabindex="0"
+              role="button"
             >
               <h3>{task.taskName}</h3>
               <p>{task.description || '설명 없음'}</p>
@@ -374,3 +375,13 @@
     {/if}
   {/if}
 </Container> 
+
+
+<style>
+.task-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #ddd;
+}
+
+</style>

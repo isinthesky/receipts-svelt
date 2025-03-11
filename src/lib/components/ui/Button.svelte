@@ -1,86 +1,229 @@
 <script lang="ts">
-  // 버튼 타입
-  export let type: 'button' | 'submit' | 'reset' = 'button';
+  import type { HTMLButtonAttributes } from 'svelte/elements';
+  import { createEventDispatcher } from 'svelte';
   
-  // 버튼 변형
-  export let variant: 'primary' | 'secondary' | 'danger' | 'success' | 'warning' | 'info' | 'light' | 'dark' | 'link' | 'outline' = 'primary';
+  interface $$Props extends HTMLButtonAttributes {
+    variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'warning' | 'info' | 'light' | 'dark' | 'outline' | 'link' | 'ghost';
+    size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'icon';
+    fullWidth?: boolean;
+    loading?: boolean;
+    disabled?: boolean;
+    className?: string;
+  }
   
-  // 버튼 크기
-  export let size: 'xs' | 'sm' | 'md' | 'lg' | 'xl' = 'md';
-  
-  // 버튼 전체 너비
+  export let variant: $$Props['variant'] = 'primary';
+  export let size: $$Props['size'] = 'md';
   export let fullWidth = false;
-  
-  // 버튼 비활성화
-  export let disabled = false;
-  
-  // 링크 URL (버튼을 링크로 사용할 경우)
-  export let href: string | undefined = undefined;
-  
-  // 로딩 상태
   export let loading = false;
-  
-  // 아이콘 (선택사항)
-  export let icon: string | null = null;
-  
-  // 아이콘 위치
-  export let iconPosition: 'left' | 'right' = 'left';
-  
-  // 추가 클래스
+  export let disabled = false;
   export let className = '';
   
-  // 버튼 스타일 클래스 계산
-  $: variantClasses = {
-    primary: 'bg-blue-600 hover:bg-blue-700 text-white',
-    secondary: 'bg-gray-600 hover:bg-gray-700 text-white',
-    danger: 'bg-red-600 hover:bg-red-700 text-white',
-    success: 'bg-green-600 hover:bg-green-700 text-white',
-    warning: 'bg-yellow-500 hover:bg-yellow-600 text-white',
-    info: 'bg-cyan-500 hover:bg-cyan-600 text-white',
-    light: 'bg-gray-100 hover:bg-gray-200 text-gray-800',
-    dark: 'bg-gray-800 hover:bg-gray-900 text-white',
-    link: 'bg-transparent hover:underline text-blue-600',
-    outline: 'bg-transparent border border-gray-300 hover:bg-gray-100 text-gray-700'
-  }[variant];
+  const dispatch = createEventDispatcher();
   
-  $: sizeClasses = {
-    xs: 'px-2 py-1 text-xs',
-    sm: 'px-2.5 py-1.5 text-sm',
-    md: 'px-4 py-2 text-base',
-    lg: 'px-5 py-2.5 text-lg',
-    xl: 'px-6 py-3 text-xl'
-  }[size];
-  
-  $: widthClass = fullWidth ? 'w-full' : '';
-  
-  // 최종 클래스 계산
-  $: buttonClasses = `inline-flex items-center justify-center font-medium rounded-md transition-colors ${variantClasses} ${sizeClasses} ${widthClass} ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${className}`;
+  $: classes = [
+    'button',
+    `button--${variant}`,
+    `button--${size}`,
+    fullWidth && 'button--full-width',
+    loading && 'button--loading',
+    className
+  ].filter(Boolean).join(' ');
 </script>
 
-{#if href !== undefined}
-  <a href={href} class={buttonClasses} role="button" aria-disabled={disabled}>
-    {#if icon && iconPosition === 'left'}
-      <span class="mr-2">{icon}</span>
-    {/if}
-    <slot />
-    {#if icon && iconPosition === 'right'}
-      <span class="ml-2">{icon}</span>
-    {/if}
-    {#if loading}
-      <span class="ml-2 animate-spin">⟳</span>
-    {/if}
-  </a>
-{:else}
-  <button {type} class={buttonClasses} {disabled} on:click>
-    {#if icon && iconPosition === 'left'}
-      <span class="mr-2">{icon}</span>
-    {/if}
-    <slot />
-    {#if icon && iconPosition === 'right'}
-      <span class="ml-2">{icon}</span>
-    {/if}
-    {#if loading}
-      <span class="ml-2 animate-spin">⟳</span>
-    {/if}
-  </button>
-{/if} 
+<button
+  class={classes}
+  {disabled}
+  on:click
+  on:mouseover
+  on:mouseenter
+  on:mouseleave
+  on:focus
+  on:blur
+  {...$$restProps}
+>
+  {#if loading}
+    <span class="button__spinner" />
+  {/if}
+  <slot />
+</button>
+
+<style>
+  .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+    font-weight: var(--font-weight-medium);
+    border-radius: var(--radius-md);
+    transition: all 0.2s;
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+  
+  .button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  /* Sizes */
+  .button--xs {
+    padding: 0.25rem 0.5rem;
+    font-size: var(--font-size-xs);
+  }
+  
+  .button--sm {
+    padding: 0.375rem 0.75rem;
+    font-size: var(--font-size-sm);
+  }
+  
+  .button--md {
+    padding: 0.5rem 1rem;
+    font-size: var(--font-size-md);
+  }
+  
+  .button--lg {
+    padding: 0.75rem 1.5rem;
+    font-size: var(--font-size-lg);
+  }
+  
+  .button--xl {
+    padding: 1rem 2rem;
+    font-size: var(--font-size-xl);
+  }
+  
+  .button--icon {
+    padding: 0.5rem;
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+  
+  /* Variants */
+  .button--primary {
+    background-color: var(--color-primary);
+    color: white;
+  }
+  
+  .button--primary:hover:not(:disabled) {
+    background-color: var(--color-primary-dark);
+  }
+  
+  .button--secondary {
+    background-color: var(--color-secondary);
+    color: white;
+  }
+  
+  .button--secondary:hover:not(:disabled) {
+    background-color: var(--color-secondary-dark);
+  }
+  
+  .button--danger {
+    background-color: var(--color-error);
+    color: white;
+  }
+  
+  .button--danger:hover:not(:disabled) {
+    background-color: var(--color-error-dark);
+  }
+  
+  .button--success {
+    background-color: var(--color-success);
+    color: white;
+  }
+  
+  .button--success:hover:not(:disabled) {
+    background-color: var(--color-success-dark);
+  }
+  
+  .button--warning {
+    background-color: var(--color-warning);
+    color: var(--color-text-dark);
+  }
+  
+  .button--warning:hover:not(:disabled) {
+    background-color: var(--color-warning-dark);
+  }
+  
+  .button--info {
+    background-color: var(--color-info);
+    color: white;
+  }
+  
+  .button--info:hover:not(:disabled) {
+    background-color: var(--color-info-dark);
+  }
+  
+  .button--light {
+    background-color: var(--color-light);
+    color: var(--color-text-dark);
+  }
+  
+  .button--light:hover:not(:disabled) {
+    background-color: var(--color-light-dark);
+  }
+  
+  .button--dark {
+    background-color: var(--color-dark);
+    color: white;
+  }
+  
+  .button--dark:hover:not(:disabled) {
+    background-color: var(--color-dark-light);
+  }
+  
+  .button--outline {
+    background-color: transparent;
+    border-color: var(--color-border);
+    color: var(--color-text-primary);
+  }
+  
+  .button--outline:hover:not(:disabled) {
+    background-color: var(--color-main-bg);
+  }
+  
+  .button--link {
+    background-color: transparent;
+    color: var(--color-primary);
+    padding: 0;
+  }
+  
+  .button--link:hover:not(:disabled) {
+    text-decoration: underline;
+  }
+  
+  .button--ghost {
+    background-color: transparent;
+    color: var(--color-text-primary);
+  }
+  
+  .button--ghost:hover:not(:disabled) {
+    background-color: var(--color-main-bg);
+  }
+  
+  .button--full-width {
+    width: 100%;
+  }
+  
+  .button--loading {
+    position: relative;
+    color: transparent;
+  }
+  
+  .button__spinner {
+    position: absolute;
+    width: 1em;
+    height: 1em;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    border-right-color: transparent;
+    animation: spin 0.75s linear infinite;
+  }
+  
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+</style> 

@@ -40,13 +40,13 @@ const createAuthStore = () => {
     subscribe,
     
     // 로그인
-    login: async (email: string, password: string) => {
-      console.log('authStore.login 호출됨:', email, password);
+    login: async (email: string, password: string, rememberMe: boolean = false) => {
+      console.log('authStore.login 호출됨:', email, password, rememberMe);
       update(state => ({ ...state, loading: true, error: null }));
       
       try {
-        console.log('authApi.login 호출 직전:', email, password);
-        const apiResponse = await authApi.login(email, password);
+        console.log('authApi.login 호출 직전:', email, password, rememberMe);
+        const apiResponse = await authApi.login(email, password, rememberMe);
         console.log('로그인 응답:', apiResponse);
         
         // 응답 구조 확인

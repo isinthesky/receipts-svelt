@@ -1,5 +1,13 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import type { HTMLInputAttributes } from 'svelte/elements';
+  
+  interface $$Props extends HTMLInputAttributes {
+    label?: string;
+    error?: string;
+    hint?: string;
+    className?: string;
+  }
   
   // 이벤트 디스패처
   const dispatch = createEventDispatcher<{
@@ -22,7 +30,7 @@
   export let name = '';
   
   // 입력 필드 레이블
-  export let label = '';
+  export let label: $$Props['label'] = undefined;
   
   // 입력 필드 플레이스홀더
   export let placeholder = '';
@@ -31,7 +39,7 @@
   export let helpText = '';
   
   // 입력 필드 오류 메시지
-  export let error = '';
+  export let error: $$Props['error'] = undefined;
   
   // 입력 필드 비활성화
   export let disabled = false;
@@ -67,7 +75,7 @@
   export let iconPosition: 'left' | 'right' = 'left';
   
   // 추가 클래스
-  export let className = '';
+  export let className: $$Props['className'] = '';
   
   // 입력 필드 크기 클래스 계산
   $: sizeClasses = {
