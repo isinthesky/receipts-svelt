@@ -1,11 +1,10 @@
 <script lang="ts">
-  // date-fns 라이브러리 의존성 제거
+  import { IMAGE_STATUS } from '$lib/stores/images';
   import type { Image } from '$lib/types/image.types';
 
   // 속성 정의
   export let image: Image;
   const IMAGE_API_URL = "http://facreport.iptime.org:5008";
-  console.log('IMAGE_API_URL', IMAGE_API_URL);
 
   // 파일 크기 포맷팅 함수
   function formatFileSize(bytes: number): string {
@@ -21,10 +20,15 @@
   // 처리 상태 텍스트 반환 함수
   function getProcessingStatusText(status: number): string {
     switch (status) {
-      case 0: return '처리 실패';
-      case 1: return '처리 대기';
-      case 2: return '처리 중';
-      case 3: return '처리 완료';
+      case IMAGE_STATUS.DELETED: return '삭제됨';
+      case IMAGE_STATUS.HIDDEN: return '숨김';
+      case IMAGE_STATUS.WAITING: return '처리 대기';
+      case IMAGE_STATUS.AREA_CREATING: return '영역 생성 중';
+      case IMAGE_STATUS.AREA_CREATED: return '영역 생성 완료';
+      case IMAGE_STATUS.AREA_SELECTING: return '영역 선택 중';
+      case IMAGE_STATUS.OCR_WAITING: return 'OCR 대기';
+      case IMAGE_STATUS.OCR_PROCESSING: return 'OCR 처리 중';
+      case IMAGE_STATUS.COMPLETED: return '처리 완료';
       default: return '알 수 없음';
     }
   }
@@ -32,11 +36,22 @@
   // 처리 상태 클래스 반환 함수
   function getProcessingStatusClass(status: number): string {
     switch (status) {
-      case 0: return 'status-failed';
-      case 1: return 'status-pending';
-      case 2: return 'status-processing';
-      case 3: return 'status-completed';
-      default: return '';
+      case IMAGE_STATUS.DELETED:
+      case IMAGE_STATUS.HIDDEN:
+        return 'status-hidden';
+      case IMAGE_STATUS.WAITING:
+        return 'status-waiting';
+      case IMAGE_STATUS.AREA_CREATING:
+      case IMAGE_STATUS.AREA_SELECTING:
+      case IMAGE_STATUS.OCR_PROCESSING:
+        return 'status-processing';
+      case IMAGE_STATUS.AREA_CREATED:
+      case IMAGE_STATUS.OCR_WAITING:
+        return 'status-waiting-next';
+      case IMAGE_STATUS.COMPLETED:
+        return 'status-completed';
+      default:
+        return '';
     }
   }
 
@@ -72,12 +87,19 @@
   const formattedDate = image.createdAt 
     ? formatRelativeTime(image.createdAt)
     : '';
+    
+  // rectUrl이 있으면 해당 이미지를 사용, 없으면 thumbnailUrl 사용
+  $: displayImageUrl = image.rectUrl && image.processingStatus >= IMAGE_STATUS.AREA_CREATED
+    ? `${IMAGE_API_URL}/${image.rectUrl}`
+    : image.thumbnailUrl
+      ? `${IMAGE_API_URL}/${image.thumbnailUrl}`
+      : null;
 </script>
 
 <div class="image-card">
   <div class="image-thumbnail">
-    {#if image.thumbnailUrl}
-      <img src={`${IMAGE_API_URL}/${image.thumbnailUrl}`} alt={image.fileName} />
+    {#if displayImageUrl}
+      <img src={displayImageUrl} alt={image.fileName} />
     {:else}
       <div class="no-thumbnail">
         <span>이미지 없음</span>
@@ -87,6 +109,14 @@
     {#if image.receiptCount > 0}
       <div class="receipt-badge">
         <span>{image.receiptCount}</span>
+      </div>
+    {/if}
+    
+    {#if image.processingStatus === IMAGE_STATUS.AREA_CREATING || 
+         image.processingStatus === IMAGE_STATUS.AREA_SELECTING || 
+         image.processingStatus === IMAGE_STATUS.OCR_PROCESSING}
+      <div class="processing-badge">
+        <span class="processing-icon"></span>
       </div>
     {/if}
   </div>
@@ -162,6 +192,36 @@
     font-weight: bold;
   }
   
+  .processing-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+  }
+  
+  .processing-icon {
+    display: block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #fff;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  
   .image-info {
     padding: 12px;
     display: flex;
@@ -197,7 +257,7 @@
     font-weight: 500;
   }
   
-  .status-pending {
+  .status-waiting {
     background-color: #f5f5f5;
     color: #666;
   }
@@ -207,13 +267,18 @@
     color: #F39C12;
   }
   
+  .status-waiting-next {
+    background-color: #E3F2FD;
+    color: #2196F3;
+  }
+  
   .status-completed {
     background-color: #E8F5E9;
     color: #2ECC71;
   }
   
-  .status-failed {
+  .status-hidden {
     background-color: #FDEDEB;
     color: #E74C3C;
   }
-</style> 
+</style>

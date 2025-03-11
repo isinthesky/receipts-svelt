@@ -2,6 +2,19 @@ import { writable } from 'svelte/store';
 import { imageAPI } from '$lib/api/image';
 import type { Image, ImageUploadDto, ImageFilterOptions } from '$lib/types/image.types';
 
+// 이미지 처리 상태 상수 정의
+export const IMAGE_STATUS = {
+  DELETED: -1,      // 삭제됨
+  HIDDEN: 0,        // 숨김
+  WAITING: 1,       // 처리 대기
+  AREA_CREATING: 2, // 영역 생성 중
+  AREA_CREATED: 3,  // 영역 생성 완료
+  AREA_SELECTING: 4,// 영역 선택 중
+  OCR_WAITING: 5,   // 문자열 추출 대기
+  OCR_PROCESSING: 6,// 문자열 추출 중
+  COMPLETED: 7      // 처리 완료
+};
+
 // 이미지 상태 타입 정의
 interface ImageState {
   // 태스크별 이미지 목록 (태스크 ID를 키로 사용)
@@ -49,7 +62,7 @@ function mapApiImageToImage(apiImage: Image): Image {
     fileSize: typeof apiImage.fileSize === 'number' ? apiImage.fileSize : 0,
     fileType: typeof apiImage.fileType === 'string' ? apiImage.fileType : 'image/jpeg',
     ocrConfidence: typeof apiImage.ocrConfidence === 'number' ? apiImage.ocrConfidence : 0,
-    processingStatus: typeof apiImage.processingStatus === 'number' ? apiImage.processingStatus : 1,
+    processingStatus: typeof apiImage.processingStatus === 'number' ? apiImage.processingStatus : IMAGE_STATUS.WAITING,
     receiptCount: typeof apiImage.receiptCount === 'number' ? apiImage.receiptCount : 0,
     createdAt: typeof apiImage.createdAt === 'string' ? apiImage.createdAt : new Date().toISOString(),
     updatedAt: typeof apiImage.updatedAt === 'string' ? apiImage.updatedAt : new Date().toISOString(),
@@ -59,7 +72,8 @@ function mapApiImageToImage(apiImage: Image): Image {
 
 // 이미지 필터링 및 정렬 함수
 function filterAndSortImages(images: Image[], options: ImageFilterOptions): Image[] {
-  let filteredImages = [...images];
+  // 삭제된 이미지는 필터링에서 제외
+  let filteredImages = images.filter(img => img.processingStatus !== IMAGE_STATUS.DELETED);
   
   // 처리 상태로 필터링
   if (options.processingStatus !== undefined) {
@@ -95,6 +109,24 @@ function filterAndSortImages(images: Image[], options: ImageFilterOptions): Imag
   }
   
   return filteredImages;
+}
+
+// 현재 이미지 상태 가져오기
+function getImageCurrentState(imageId: string): Image | null {
+  let result: Image | null = null;
+  
+  subscribe(state => {
+    // 모든 태스크를 순회하며 이미지 찾기
+    for (const images of Object.values(state.imagesByTask)) {
+      const image = images.find(img => img.id === imageId);
+      if (image) {
+        result = image;
+        break;
+      }
+    }
+  })();
+  
+  return result;
 }
 
 // 이미지 스토어 액션 정의
@@ -174,10 +206,7 @@ export const imageStore = {
     }));
     
     try {
-      // 실제 업로드 구현 시 진행률 업데이트 로직 추가 필요
-      // 여기서는 간단히 구현
-      
-      // 진행률 시뮬레이션 (실제 구현 시 axios의 onUploadProgress 사용)
+      // 진행률 시뮬레이션
       const progressInterval = setInterval(() => {
         update(state => {
           if (state.uploadProgress < 90) {
@@ -197,6 +226,10 @@ export const imageStore = {
       }
       
       const mappedImage = mapApiImageToImage(image as Image);
+      
+      // 업로드 후 처리 대기 상태로 설정
+      await imageAPI.updateImageStatus(mappedImage.id, IMAGE_STATUS.WAITING);
+      mappedImage.processingStatus = IMAGE_STATUS.WAITING;
       
       update(state => {
         // 해당 태스크의 이미지 목록에 새 이미지 추가
@@ -254,44 +287,36 @@ export const imageStore = {
     return filterAndSortImages(images, currentState.filterOptions);
   },
   
-  // 이미지 상태 업데이트
-  updateImageStatus: async (imageId: string, status: number) => {
+  // 이미지 업데이트 (반환된 이미지 정보로 스토어 갱신)
+  updateImage: async (updatedImage: Image) => {
     try {
-      // 모든 태스크에서 해당 이미지 찾기
-      let foundImage: Image | null = null;
-      let foundTaskId: string | null = null;
+      // 이미지 매핑
+      const mappedImage = mapApiImageToImage(updatedImage);
+      const imageId = mappedImage.id;
+      const taskId = mappedImage.taskId;
+      
+      if (!imageId || !taskId) {
+        console.error('유효하지 않은 이미지 정보입니다.');
+        return false;
+      }
       
       update(state => {
-        // 모든 태스크를 순회하며 이미지 찾기
-        for (const [taskId, images] of Object.entries(state.imagesByTask)) {
-          const image = images.find(img => img.id === imageId);
-          if (image) {
-            foundImage = image;
-            foundTaskId = taskId;
-            break;
-          }
-        }
-        
-        // 이미지를 찾지 못한 경우
-        if (!foundImage || !foundTaskId) {
-          return state;
-        }
-        
-        // 이미지 상태 업데이트
-        const updatedImages = state.imagesByTask[foundTaskId].map(img => 
-          img.id === imageId ? { ...img, processingStatus: status } : img
+        // 해당 태스크의 이미지 목록에서 업데이트할 이미지 찾기
+        const taskImages = state.imagesByTask[taskId] || [];
+        const updatedTaskImages = taskImages.map(img => 
+          img.id === imageId ? mappedImage : img
         );
         
         // 현재 선택된 이미지가 업데이트 대상인 경우 함께 업데이트
         const updatedCurrentImage = state.currentImage && state.currentImage.id === imageId
-          ? { ...state.currentImage, processingStatus: status }
+          ? mappedImage
           : state.currentImage;
         
         return {
           ...state,
           imagesByTask: {
             ...state.imagesByTask,
-            [foundTaskId]: updatedImages
+            [taskId]: updatedTaskImages
           },
           currentImage: updatedCurrentImage
         };
@@ -299,8 +324,184 @@ export const imageStore = {
       
       return true;
     } catch (error) {
+      console.error('Error in updateImage:', error);
+      return false;
+    }
+  },
+  
+  // 이미지 상태 업데이트
+  updateImageStatus: async (imageId: string, status: number) => {
+    try {
+      // API를 통해 이미지 상태 업데이트
+      const updatedImage = await imageAPI.updateImageStatus(imageId, status);
+      
+      if (!updatedImage) {
+        throw new Error('이미지 상태 업데이트에 실패했습니다.');
+      }
+      
+      // 업데이트된 이미지 정보로 스토어 갱신
+      return await imageStore.updateImage(updatedImage);
+    } catch (error) {
       console.error('Error in updateImageStatus:', error);
       return false;
+    }
+  },
+  
+  // 이미지 삭제 (상태 변경으로 처리)
+  deleteImage: async (imageId: string) => {
+    try {
+      // API를 통해 이미지 삭제 처리
+      const updatedImage = await imageAPI.deleteImage(imageId);
+      
+      if (!updatedImage) {
+        throw new Error('이미지 삭제에 실패했습니다.');
+      }
+      
+      // 업데이트된 이미지 정보로 스토어 갱신
+      return await imageStore.updateImage(updatedImage);
+    } catch (error) {
+      console.error('Error in deleteImage:', error);
+      return false;
+    }
+  },
+  
+  // 이미지 숨김 처리
+  hideImage: async (imageId: string) => {
+    try {
+      // API를 통해 이미지 숨김 처리
+      const updatedImage = await imageAPI.hideImage(imageId);
+      
+      if (!updatedImage) {
+        throw new Error('이미지 숨김 처리에 실패했습니다.');
+      }
+      
+      // 업데이트된 이미지 정보로 스토어 갱신
+      return await imageStore.updateImage(updatedImage);
+    } catch (error) {
+      console.error('Error in hideImage:', error);
+      return false;
+    }
+  },
+  
+  // 영수증 영역 생성
+  createReceiptArea: async (imageId: string, taskId: string) => {
+    update(state => ({ ...state, loading: true, error: null }));
+    
+    try {
+      // 이미지 상태 확인
+      const currentState = getImageCurrentState(imageId);
+      
+      // 이미 처리 중이거나 완료된 경우 중복 처리 방지
+      if (currentState && (
+          currentState.processingStatus === IMAGE_STATUS.AREA_CREATING ||
+          currentState.processingStatus === IMAGE_STATUS.AREA_CREATED ||
+          currentState.processingStatus >= IMAGE_STATUS.AREA_SELECTING
+      )) {
+        console.log('이미 영역 생성이 진행 중이거나 완료되었습니다.');
+        return currentState;
+      }
+      
+      // 영수증 영역 생성 API 호출 (내부적으로 상태 업데이트 포함)
+      const updatedImage = await imageAPI.createReceiptArea(imageId, taskId);
+      
+      if (!updatedImage) {
+        throw new Error('영수증 영역 생성에 실패했습니다.');
+      }
+      
+      // 업데이트된 이미지 정보로 스토어 갱신
+      await imageStore.updateImage(updatedImage);
+      
+      update(state => ({ ...state, loading: false }));
+      return updatedImage;
+    } catch (error) {
+      console.error('Error in createReceiptArea:', error);
+      const errorMsg = error instanceof Error ? error.message : '영수증 영역 생성에 실패했습니다.';
+      update(state => ({ ...state, loading: false, error: errorMsg }));
+      return null;
+    }
+  },
+  
+  // 영수증 영역 선택
+  selectReceiptArea: async (imageId: string, areaType: string = 'blue_area') => {
+    update(state => ({ ...state, loading: true, error: null }));
+    
+    try {
+      // 이미지 상태 확인
+      const currentState = getImageCurrentState(imageId);
+      
+      // 이미 처리 중이거나 완료된 경우 중복 처리 방지
+      if (currentState && (
+          currentState.processingStatus === IMAGE_STATUS.AREA_SELECTING ||
+          currentState.processingStatus >= IMAGE_STATUS.OCR_WAITING
+      )) {
+        console.log('이미 영역 선택이 진행 중이거나 완료되었습니다.');
+        return currentState;
+      }
+      
+      // 영역 생성이 완료되지 않은 경우 처리 불가
+      if (currentState && currentState.processingStatus < IMAGE_STATUS.AREA_CREATED) {
+        throw new Error('영역 생성이 완료되지 않아 영역 선택을 할 수 없습니다.');
+      }
+      
+      // 영수증 영역 선택 API 호출 (내부적으로 상태 업데이트 포함)
+      const updatedImage = await imageAPI.selectReceiptArea(imageId, areaType);
+      
+      if (!updatedImage) {
+        throw new Error('영수증 영역 선택에 실패했습니다.');
+      }
+      
+      // 업데이트된 이미지 정보로 스토어 갱신
+      await imageStore.updateImage(updatedImage);
+      
+      update(state => ({ ...state, loading: false }));
+      return updatedImage;
+    } catch (error) {
+      console.error('Error in selectReceiptArea:', error);
+      const errorMsg = error instanceof Error ? error.message : '영수증 영역 선택에 실패했습니다.';
+      update(state => ({ ...state, loading: false, error: errorMsg }));
+      return null;
+    }
+  },
+  
+  // 영수증 문자열 추출
+  extractOcr: async (imageId: string, areaType: string = 'blue_area') => {
+    update(state => ({ ...state, loading: true, error: null }));
+    
+    try {
+      // 이미지 상태 확인
+      const currentState = getImageCurrentState(imageId);
+      
+      // 이미 처리 중이거나 완료된 경우 중복 처리 방지
+      if (currentState && (
+          currentState.processingStatus === IMAGE_STATUS.OCR_PROCESSING ||
+          currentState.processingStatus === IMAGE_STATUS.COMPLETED
+      )) {
+        console.log('이미 문자열 추출이 진행 중이거나 완료되었습니다.');
+        return currentState;
+      }
+      
+      // 영역 선택이 완료되지 않은 경우 처리 불가
+      if (currentState && currentState.processingStatus < IMAGE_STATUS.OCR_WAITING) {
+        throw new Error('영역 선택이 완료되지 않아 문자열 추출을 할 수 없습니다.');
+      }
+      
+      // 영수증 문자열 추출 API 호출 (내부적으로 상태 업데이트 포함)
+      const updatedImage = await imageAPI.extractOcr(imageId, areaType);
+      
+      if (!updatedImage) {
+        throw new Error('문자열 추출에 실패했습니다.');
+      }
+      
+      // 업데이트된 이미지 정보로 스토어 갱신
+      await imageStore.updateImage(updatedImage);
+      
+      update(state => ({ ...state, loading: false }));
+      return updatedImage;
+    } catch (error) {
+      console.error('Error in extractOcr:', error);
+      const errorMsg = error instanceof Error ? error.message : '문자열 추출에 실패했습니다.';
+      update(state => ({ ...state, loading: false, error: errorMsg }));
+      return null;
     }
   },
   
@@ -308,4 +509,4 @@ export const imageStore = {
   clearError: () => {
     update(state => ({ ...state, error: null }));
   }
-}; 
+};

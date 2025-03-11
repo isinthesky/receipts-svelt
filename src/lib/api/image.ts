@@ -51,6 +51,19 @@ export const imageAPI = {
     return response.data.data;
   },
   
+  // 이미지 상태 업데이트 API
+  updateImageStatus: async (imageId: string, status: number) => {
+    const response = await imageClient.patch<ResponseData<Image>>(`/api/v1/main/images/${imageId}/state`, {
+      state: status
+    });
+    
+    if (!response.data.success) {
+      throw new Error(response.data.message || '이미지 상태 업데이트에 실패했습니다.');
+    }
+    
+    return response.data.data;
+  },
+  
   // 이미지 업로드하기 (태스크 ID 연결)
   uploadImage: async (taskId: string, imageData: ImageUploadDto) => {
     // FormData 객체 생성
@@ -90,44 +103,80 @@ export const imageAPI = {
   
   // 영수증 영역 생성 API
   createReceiptArea: async (imageId: string, taskId: string) => {
-    const response = await imageClient.post<ResponseData<{ success: boolean }>>(
+    // 먼저 이미지 상태를 '영역 생성 중(2)'으로 업데이트
+    await imageAPI.updateImageStatus(imageId, 2);
+    
+    const response = await imageClient.post<ResponseData<Image>>(
       `/api/v1/main/images/${imageId}/receipt-area`,
       { taskId }
     );
     
     if (!response.data.success) {
+      // 실패 시 이미지 상태를 '처리 실패(0)'로 업데이트
+      await imageAPI.updateImageStatus(imageId, 0);
       throw new Error(response.data.message || '영수증 영역 생성에 실패했습니다.');
     }
+    
+    // 성공 시 이미지 상태를 '영역 생성 완료(3)'로 업데이트
+    await imageAPI.updateImageStatus(imageId, 3);
     
     return response.data.data;
   },
   
-  // 영수증 영역 선택 API
-  selectReceiptArea: async (imageId: string) => {
-    const response = await imageClient.patch<ResponseData<{ success: boolean }>>(
+  // 영수증 영역 선택 API (blue_area 기본값)
+  selectReceiptArea: async (imageId: string, areaType: string = 'blue_area') => {
+    // 먼저 이미지 상태를 '영역 선택 중(4)'으로 업데이트
+    await imageAPI.updateImageStatus(imageId, 4);
+    
+    const response = await imageClient.patch<ResponseData<Image>>(
       `/api/v1/main/images/${imageId}/receipt-area`,
-      {areaRectType: 'blue_area'}
+      { areaRectType: areaType }
     );
     
     if (!response.data.success) {
+      // 실패 시 이미지 상태를 '처리 실패(0)'로 업데이트
+      await imageAPI.updateImageStatus(imageId, 0);
       throw new Error(response.data.message || '영수증 영역 선택에 실패했습니다.');
     }
+    
+    // 성공 시 이미지 상태를 '문자열 추출 대기(5)'로 업데이트
+    await imageAPI.updateImageStatus(imageId, 5);
     
     return response.data.data;
   },
   
   // 영수증 문자열 추출 API
-  extractOcr: async (imageId: string) => {
-    const response = await imageClient.post<ResponseData<{ success: boolean }>>(
+  extractOcr: async (imageId: string, areaType: string = 'blue_area') => {
+    // 먼저 이미지 상태를 '문자열 추출 중(6)'으로 업데이트
+    await imageAPI.updateImageStatus(imageId, 6);
+    
+    const response = await imageClient.post<ResponseData<Image>>(
       `/api/v1/main/images/${imageId}/ocr`,
-      {areaRectType: 'blue_area'}
+      { areaRectType: areaType }
     );
     
     if (!response.data.success) {
+      // 실패 시 이미지 상태를 '처리 실패(0)'로 업데이트
+      await imageAPI.updateImageStatus(imageId, 0);
       throw new Error(response.data.message || '문자열 추출에 실패했습니다.');
     }
     
+    // 성공 시 이미지 상태를 '처리 완료(7)'로 업데이트
+    await imageAPI.updateImageStatus(imageId, 7);
+    
     return response.data.data;
+  },
+  
+  // 이미지 숨김/삭제 처리
+  hideImage: async (imageId: string) => {
+    // 이미지 상태를 '숨김(0)'으로 업데이트
+    return await imageAPI.updateImageStatus(imageId, 0);
+  },
+  
+  // 이미지 삭제 (실제 삭제가 아닌 상태 변경)
+  deleteImage: async (imageId: string) => {
+    // 이미지 상태를 '삭제(-1)'으로 업데이트
+    return await imageAPI.updateImageStatus(imageId, -1);
   },
   
   // 이미지별 영수증 목록 조회 API
@@ -193,4 +242,4 @@ export const imageAPI = {
       throw error;
     }
   }
-}; 
+};

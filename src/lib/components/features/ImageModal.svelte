@@ -105,6 +105,13 @@
     ? formatRelativeTime(image.createdAt)
     : '';
 
+  // 이미지 URL 결정 - rectUrl이 있으면 우선 사용, 아니면 thumbnailUrl 사용
+  $: imageUrl = image.rectUrl 
+    ? `${IMAGE_API_URL}/${image.rectUrl}` 
+    : image.thumbnailUrl 
+      ? `${IMAGE_API_URL}/${image.thumbnailUrl}` 
+      : null;
+
   // 키보드 이벤트 핸들러 추가
   function handleKeyDown(event: KeyboardEvent) {
     if (event.key === 'Escape') {
@@ -130,8 +137,8 @@
     
     <div class="modal-body">
       <div class="image-container">
-        {#if image.thumbnailUrl}
-          <img src={`${IMAGE_API_URL}/${image.thumbnailUrl}`} alt={image.fileName} />
+        {#if imageUrl}
+          <img src={imageUrl} alt={image.fileName} />
         {:else}
           <div class="no-image">
             <span>이미지를 불러올 수 없습니다.</span>
@@ -410,4 +417,4 @@
     background-color: #E74C3C;
     color: white;
   }
-</style> 
+</style>

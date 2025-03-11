@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { imageStore } from '$lib/stores/images';
-  import { imageAPI } from '$lib/api/image';
   import type { Image, ImageFilterOptions } from '$lib/types/image.types';
   import ImageCard from './ImageCard.svelte';
   import ImageUpload from './ImageUpload.svelte';
@@ -86,6 +85,12 @@
     loadImages();
   }
 
+  // 이미지 처리 완료 핸들러
+  function handleProcessComplete() {
+    // 처리 완료 후 목록 새로고침
+    loadImages();
+  }
+
   // 이미지 삭제 핸들러
   function handleImageDelete() {
     // 이미지 삭제 후 목록 업데이트
@@ -110,17 +115,17 @@
     
     try {
       // 이미지 상태 업데이트 (처리 중)
-      await updateImageStatus(imageId, 2);
+      await imageStore.updateImageStatus(imageId, 2);
       
       // 처리 중 상태로 필터링
       processingStatus = 2;
       updateFilterOptions();
       
-      // API 호출
-      await imageAPI.createReceiptArea(imageId, taskId);
+      // 영수증 영역 생성 API 호출 (imageStore의 새 함수 사용)
+      await imageStore.createReceiptArea(imageId, taskId);
       
       // 이미지 상태 업데이트 (처리 완료)
-      await updateImageStatus(imageId, 3);
+      await imageStore.updateImageStatus(imageId, 3);
       
       // 처리 완료 상태로 필터링
       processingStatus = 3;
@@ -131,7 +136,7 @@
       console.error('영수증 영역 생성 오류:', err);
       alert(err instanceof Error ? err.message : '영수증 영역 생성에 실패했습니다.');
       // 이미지 상태 업데이트 (처리 실패)
-      await updateImageStatus(imageId, 0);
+      await imageStore.updateImageStatus(imageId, 0);
       
       // 처리 실패 상태로 필터링
       processingStatus = 0;
@@ -151,17 +156,17 @@
     
     try {
       // 이미지 상태 업데이트 (처리 중)
-      await updateImageStatus(imageId, 2);
+      await imageStore.updateImageStatus(imageId, 2);
       
       // 처리 중 상태로 필터링
       processingStatus = 2;
       updateFilterOptions();
       
-      // API 호출
-      await imageAPI.selectReceiptArea(imageId);
+      // 영수증 영역 선택 API 호출 (imageStore의 새 함수 사용)
+      await imageStore.selectReceiptArea(imageId);
       
       // 이미지 상태 업데이트 (처리 완료)
-      await updateImageStatus(imageId, 3);
+      await imageStore.updateImageStatus(imageId, 3);
       
       // 처리 완료 상태로 필터링
       processingStatus = 3;
@@ -172,7 +177,7 @@
       console.error('영수증 영역 선택 오류:', err);
       alert(err instanceof Error ? err.message : '영수증 영역 선택에 실패했습니다.');
       // 이미지 상태 업데이트 (처리 실패)
-      await updateImageStatus(imageId, 0);
+      await imageStore.updateImageStatus(imageId, 0);
       
       // 처리 실패 상태로 필터링
       processingStatus = 0;
@@ -192,17 +197,17 @@
     
     try {
       // 이미지 상태 업데이트 (처리 중)
-      await updateImageStatus(imageId, 2);
+      await imageStore.updateImageStatus(imageId, 2);
       
       // 처리 중 상태로 필터링
       processingStatus = 2;
       updateFilterOptions();
       
-      // API 호출
-      await imageAPI.extractOcr(imageId);
+      // 문자열 추출 API 호출 (imageStore의 새 함수 사용)
+      await imageStore.extractOcr(imageId);
       
       // 이미지 상태 업데이트 (처리 완료)
-      await updateImageStatus(imageId, 3);
+      await imageStore.updateImageStatus(imageId, 3);
       
       // 처리 완료 상태로 필터링
       processingStatus = 3;
@@ -213,7 +218,7 @@
       console.error('문자열 추출 오류:', err);
       alert(err instanceof Error ? err.message : '문자열 추출에 실패했습니다.');
       // 이미지 상태 업데이트 (처리 실패)
-      await updateImageStatus(imageId, 0);
+      await imageStore.updateImageStatus(imageId, 0);
       
       // 처리 실패 상태로 필터링
       processingStatus = 0;
@@ -222,18 +227,6 @@
       processingImageId = null;
       // 이미지 목록 새로고침
       loadImages();
-    }
-  }
-
-  // 이미지 상태 업데이트 함수
-  async function updateImageStatus(imageId: string, status: number) {
-    try {
-      // 이미지 스토어를 통해 상태 업데이트
-      await imageStore.updateImageStatus(imageId, status);
-      // 필터링된 이미지 목록 업데이트
-      updateFilteredImages();
-    } catch (err) {
-      console.error('이미지 상태 업데이트 오류:', err);
     }
   }
 
@@ -289,7 +282,12 @@
     <!-- 업로드 버튼 -->
     {#if showUploadButton}
       <div class="upload-button-container">
-        <ImageUpload {taskId} on:uploadComplete={handleUploadComplete} />
+        <ImageUpload 
+          {taskId} 
+          on:uploadComplete={handleUploadComplete}
+          on:processComplete={handleProcessComplete}
+          autoProcess={true}
+        />
       </div>
     {/if}
   </div>
@@ -341,19 +339,7 @@
               <ImageCard {image} />
             </div>
             
-            <div class="image-actions">
-              <button 
-                class="action-button create-area" 
-                on:click|stopPropagation={(e) => {
-                  e.stopPropagation();
-                  createReceiptArea(image.id);
-                }}
-                disabled={processingImageId === image.id || image.processingStatus === 2}
-                aria-label="영수증 영역 생성"
-              >
-                영역 생성
-              </button>
-              
+            <div class="image-actions">              
               <button 
                 class="action-button select-area" 
                 on:click|stopPropagation={(e) => {
@@ -641,4 +627,4 @@
     background-color: #f9f9f9;
     border-radius: 8px;
   }
-</style> 
+</style>

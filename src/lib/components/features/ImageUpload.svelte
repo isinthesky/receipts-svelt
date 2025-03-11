@@ -1,20 +1,23 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import { imageStore } from '$lib/stores/images';
-  import type { ImageUploadDto } from '$lib/types/image.types';
+  import type { Image, ImageUploadDto } from '$lib/types/image.types';
 
   // 속성 정의
   export let taskId: string;
   export let multiple = true;
   export let maxFileSize = 10 * 1024 * 1024; // 10MB
   export let acceptedFileTypes = 'image/*';
+  export let autoProcess = true; // 자동 영수증 영역 생성 기능
 
   // 상태 관리
   let uploading = false;
+  let processing = false;
   let uploadProgress = 0;
   let error: string | null = null;
   let dragActive = false;
   let fileInput: HTMLInputElement;
+  let uploadedImages: Image[] = [];
 
   // 이벤트 디스패처 생성
   const dispatch = createEventDispatcher();
@@ -56,11 +59,41 @@
     }
   }
 
+  // 영수증 영역 자동 생성 함수
+  async function processUploadedImages() {
+    if (!uploadedImages.length || processing) return;
+    
+    processing = true;
+    error = null;
+    
+    try {
+      for (const image of uploadedImages) {
+        // imageStore의 createReceiptArea 함수 사용 - 이미지 상태 업데이트 및 반환된 이미지 정보 스토어에 저장
+        const updatedImage = await imageStore.createReceiptArea(image.id, taskId);
+        
+        if (!updatedImage) {
+          console.error(`이미지 ID ${image.id}의 영수증 영역 생성에 실패했습니다.`);
+        }
+      }
+      
+      // 처리 완료 후 이벤트 발생
+      dispatch('processComplete', { images: uploadedImages });
+      
+      // 업로드 이미지 목록 초기화
+      uploadedImages = [];
+    } catch (err) {
+      error = err instanceof Error ? err.message : '영수증 영역 생성에 실패했습니다.';
+    } finally {
+      processing = false;
+    }
+  }
+
   // 파일 처리 함수
   async function handleFiles(files: FileList) {
-    if (uploading) return;
+    if (uploading || processing) return;
     
     error = null;
+    uploadedImages = []; // 업로드 이미지 초기화
     
     // 다중 업로드가 아닌 경우 첫 번째 파일만 처리
     const filesToUpload = multiple ? Array.from(files) : [files[0]];
@@ -91,16 +124,27 @@
           description: ''
         };
         
-        await imageStore.uploadImage(taskId, imageData);
+        const uploadedImage = await imageStore.uploadImage(taskId, imageData);
+        if (uploadedImage) {
+          uploadedImages.push(uploadedImage);
+        }
         uploadProgress = 100;
       }
-      
-      // 업로드 완료 이벤트 발생
-      dispatch('uploadComplete');
       
       // 입력 필드 초기화
       if (fileInput) {
         fileInput.value = '';
+      }
+      
+      // 업로드 완료 이벤트 발생
+      dispatch('uploadComplete', { images: uploadedImages });
+      
+      // 자동 영수증 영역 생성 옵션이 활성화된 경우
+      if (autoProcess && uploadedImages.length > 0) {
+        // 잠시 지연 후 영수증 영역 생성 시작 (업로드와 처리 사이에 약간의 딜레이)
+        setTimeout(() => {
+          processUploadedImages();
+        }, 500);
       }
     } catch (err) {
       error = err instanceof Error ? err.message : '이미지 업로드에 실패했습니다.';
@@ -128,16 +172,17 @@
   }
 </script>
 
-<div class="image-upload">
+<div class="w-full">
   <div 
-    class="dropzone"
-    class:active={dragActive}
-    class:uploading={uploading}
+    class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg px-6 py-6 text-center cursor-pointer transition-all duration-300
+      hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-gray-800
+      {dragActive ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-900'}
+      {uploading || processing ? 'cursor-default border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-gray-800' : ''}"
     on:dragenter={handleDragEnter}
     on:dragover={handleDragOver}
     on:dragleave={handleDragLeave}
     on:drop={handleDrop}
-    on:click={openFileDialog}
+    on:click={!uploading && !processing ? openFileDialog : undefined}
     on:keydown={handleKeyDown}
     role="button"
     tabindex="0"
@@ -153,119 +198,44 @@
     />
     
     {#if uploading}
-      <div class="upload-progress">
-        <div class="progress-bar">
-          <div class="progress-fill" style="width: {uploadProgress}%"></div>
+      <div class="flex flex-col items-center gap-2 w-full">
+        <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div class="h-full bg-blue-500 transition-all duration-300" style="width: {uploadProgress}%"></div>
         </div>
-        <span class="progress-text">업로드 중... {uploadProgress}%</span>
+        <span class="text-sm text-gray-600 dark:text-gray-400">업로드 중... {uploadProgress}%</span>
+      </div>
+    {:else if processing}
+      <div class="flex flex-col items-center gap-2 w-full">
+        <div class="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        <span class="text-sm text-gray-600 dark:text-gray-400">영수증 영역 생성 중...</span>
       </div>
     {:else}
-      <div class="upload-content">
+      <div class="flex flex-col items-center gap-2 text-gray-600 dark:text-gray-400">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
           <polyline points="17 8 12 3 7 8"></polyline>
           <line x1="12" y1="3" x2="12" y2="15"></line>
         </svg>
-        <span class="upload-text">
+        <span class="text-base font-medium">
           {#if dragActive}
             파일을 놓아서 업로드
           {:else}
             클릭하거나 파일을 끌어다 놓으세요
           {/if}
         </span>
-        <span class="upload-hint">
+        <span class="text-xs text-gray-500 dark:text-gray-500">
           최대 {maxFileSize / (1024 * 1024)}MB, {multiple ? '여러 파일' : '단일 파일'} 업로드 가능
+          {#if autoProcess}
+            <br>업로드 후 자동으로 영수증 영역 생성이 진행됩니다
+          {/if}
         </span>
       </div>
     {/if}
   </div>
   
   {#if error}
-    <div class="error-message">
+    <div class="mt-2 text-sm text-red-600 dark:text-red-400">
       {error}
     </div>
   {/if}
 </div>
-
-<style>
-  .image-upload {
-    width: 100%;
-  }
-  
-  .dropzone {
-    border: 2px dashed #ccc;
-    border-radius: 8px;
-    padding: 24px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    background-color: #f9f9f9;
-  }
-  
-  .dropzone:hover {
-    border-color: #4A90E2;
-    background-color: #f0f7ff;
-  }
-  
-  .dropzone.active {
-    border-color: #4A90E2;
-    background-color: #e6f2ff;
-  }
-  
-  .dropzone.uploading {
-    cursor: default;
-    border-color: #4A90E2;
-    background-color: #f0f7ff;
-  }
-  
-  .upload-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    color: #666;
-  }
-  
-  .upload-text {
-    font-size: 16px;
-    font-weight: 500;
-  }
-  
-  .upload-hint {
-    font-size: 12px;
-    color: #999;
-  }
-  
-  .upload-progress {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-  }
-  
-  .progress-bar {
-    width: 100%;
-    height: 8px;
-    background-color: #eee;
-    border-radius: 4px;
-    overflow: hidden;
-  }
-  
-  .progress-fill {
-    height: 100%;
-    background-color: #4A90E2;
-    transition: width 0.3s ease;
-  }
-  
-  .progress-text {
-    font-size: 14px;
-    color: #666;
-  }
-  
-  .error-message {
-    margin-top: 8px;
-    color: #E74C3C;
-    font-size: 14px;
-  }
-</style> 
